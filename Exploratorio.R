@@ -27,7 +27,20 @@ xtabs(~ Año + Localidad + Línea, data = crudos)
 ####    VARIABLES  ####
 #Hay una banda de variables muchas surgen de cuentas hechas a partir de otras, en el doc hay un glosario de variables
 #A grandes razgos los aspectos q se evaluaron fueron: 
-  #Pl/m: Plántulas por metro lineal de surco: Entiendo que se refiere a la cantidad de plantulas q se pusieron en un principio en cada sitio, en dicho caso tiene sentido que RELATIVICEMOS todos los resultados a la cantidad inicial de plantulas de cada sitio! 
+  #Pl/m: Plántulas por metro lineal de surco: Entiendo que se refiere a la cantidad de plantulas q se pusieron en un principio en cada sitio, en dicho caso tiene sentido que RELATIVICEMOS todos los resultados a la cantidad inicial de plantulas de cada sitio!
+Plantulas <- crudos %>%
+  group_by(Año, Localidad, Línea) %>%
+  summarise(Pl_m = mean(`Pl/m`, na.rm = TRUE)) # Es una paja que la variable tenga / habria que sacarsela a todas las varibles, podemos poner _ en su lugar
+print(Plantulas)
+
+#alv faltan un monton de datos, faltan todos los de 2024 - 2025, ademas no todas las lineas tienen las mismas plantulas iniciales asique vamos a tener que relativizar!
+tabla_valores <- Plantulas %>%
+  select(Año, Localidad, Línea, Pl_m) %>%
+  pivot_wider(
+    names_from = Localidad,
+    values_from = Pl_m
+  )
+
   #Produccion de semillas: en esto hay algo interesante, parece q no todas las semillas producidas son "verdaderas" hay semillas llenas y semillas vacias, asique estimo que lo importante es q haya muchas llenas y no importa tanto el resto.
   #Macollos: es tipo la cantidad de pastitos que salen por planta jaja pueden ser de hojas o reproductivos.
             #DMT: densidad total de macollos. 
@@ -87,10 +100,16 @@ ggplot(datos_largos, aes(x = Corte, y = PF, fill = Línea)) +
   facet_wrap(~Línea) +
   theme_minimal() +
   labs(y = "Producción de forraje (g MS/m)", x = "Corte")
+#los boxplots muestran distribucion bastante normal
 ggplot(datos_largos, aes(x = Corte, y = PF, color = Línea, group = Línea)) +
   stat_summary(fun = mean, geom = "line", size = 1) +
   stat_summary(fun = mean, geom = "point", size = 2) +
   theme_minimal() +
   labs(y = "Producción de forraje (g MS/m)", x = "Corte") 
+# En general sin ver el detalle de los distintos lugares:
+#    L37 tiene un comportamiento distinto al resto de las lineas, mayor prodcuddion en el segundo corte
+#    K 14 tiene misma produccion que J7 en corte 1 y una mayor produccion que el resto hacia el 4to corte. y similar a L34 en el tercer corte.
+#   UF93 es la peor de todas
+
 
 
