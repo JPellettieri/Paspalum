@@ -58,27 +58,16 @@ tabla_valores <- Plantulas %>%
 
 
 #Que variables tendriamos que analizar segun la pregunta en juego:
-#"Preguntas:
-#  1.	¿Existen diferencias significativas entre híbridos en la producción total y en su distribución a lo largo del tiempo?
-  
-#  2.	¿Existen diferencias significativas entre localidades en la producción total y en su distribución temporal?
-  
-#  3.	¿Existe interacción significativa entre genotipo y ambiente (G×E)?
-  
-#  4.	¿Qué variables explican mejor la producción total de semillas?
-  
-#  5.	¿El uso de tasas de acumulación (por día, grado-día o mm de precipitación) permite corregir las diferencias entre frecuencias de cortes (periodo de tiempo transcurrido entre cortes sucesivos) y diferencias ambientales entre localidades?
-  
-#  6.	¿Existen diferencias entre híbridos en la densidad de inflorescencias, la producción de semillas y el porcentaje de llenado?
-  
-#  7.	¿Existen diferencias entre localidades en la densidad de inflorescencias, producción de semillas y porcentaje de llenado?
-  
-#  8.	¿Cuál sería el mejor híbrido para su registro como cultivar, considerando productividad, estabilidad y reproducción?
-  
-#  9.	¿Cuál es la localidad más adecuada para la producción comercial de semillas del nuevo cultivar?
-  
-#  10.	¿Cómo afecta la falta de datos (por ejemplo, el corte 3 del 2o año en Colonia Caroya) en los resultados del análisis? ¿Qué métodos podrían aplicarse para mitigar su impacto?
+#Preguntas:
 
+#  1.	¿Existe interacción genotipo*ambiente?
+#  2.	¿Existen diferencias entre híbridos en la distribución de la producción de forraje y la producción total acumulada?
+#  3.	¿Existen diferencias entre las localidades en la distribución de la producción de forraje y la producción total acumulada?
+#  4.	¿El uso de tasas de acumulación (por día, grado-día o mm de precipitación) permite corregir las diferencias entre frecuencias de cortes (periodo de tiempo transcurrido entre cortes sucesivos) y diferencias ambientales entre localidades?
+#  5.	¿Existen diferencias entre híbridos en la densidad de inflorescencias, producción de semillas y porcentaje de llenado de semillas?
+#  6.	¿Existen diferencias entre las localidades en la densidad de inflorescencias, producción de semillas y porcentaje de llenado de semillas?
+#  7.	Cuál sería el mejor híbrido y cuál sería la localidad más apropiada para la producción de semillas?
+  
 
 ###Comienzo analisis exploratorio en orden de las preguntas  
 #  1.	¿Existen diferencias significativas entre híbridos en la producción total y en su distribución a lo largo del tiempo?
