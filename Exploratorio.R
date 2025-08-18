@@ -129,3 +129,22 @@ ggplot(datos_largos, aes(x = Corte, y = PF_rel, color = Línea, group = Línea))
   labs(y = "Producción relativa (g MS / planta)", x = "Corte")
 
 # k es el mejor despues J , L y ultimo U
+
+
+ggplot(datos_largos, aes(x = Corte, y = PF_rel, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  facet_wrap(~Localidad) +
+  theme_minimal() +
+  labs(y = "Producción relativa (g MS / planta)", 
+       x = "Corte",
+       title = "Medias de PF relativa por corte y línea en cada localidad")
+
+## Hay una interaccion genotipo ambiente!
+      #Cerro azul: J7
+      #Colonia Caroya: K14 (falta el 3 corte en esta locacion)
+      #Corrientes: ta peleadoo 
+      #Reconquista: K14
+
+
+#Si yo hay lo mismo con gramos por °C los graficos deberian ser identicos 
