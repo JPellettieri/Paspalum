@@ -10,6 +10,7 @@ library(scales)
 library(glmmTMB)
 library(DHARMa)
 library(emmeans)
+library(readxl)
 
 crudos <- read_excel("CJB_Datos concurso jovenes de bioestadistica.xlsx")
 
@@ -72,11 +73,14 @@ xtabs(~ Año + Localidad + Línea, data = crudos)
 
 #configuro los datos para hacer analisis exploratorios
 datos_largos <- crudos %>%
-  pivot_longer(cols = starts_with("PF "),
-               names_to = "Corte",
-               values_to = "PF",
-               names_pattern = "PF (.*)") %>%
-  filter(!is.na(PF), Corte != "Total")
+  pivot_longer(
+    cols = starts_with("PF "),
+    names_to = "Corte",
+    values_to = "PF",
+    names_pattern = "PF (.*)"
+  ) %>%
+  filter(!is.na(PF), 
+         !Corte %in% c("Total", "total.ºC", "total.mm", "total.d"))
 
 ggplot(datos_largos, aes(x = Corte, y = PF, fill = Línea)) +
   geom_boxplot(outlier.shape = NA, alpha = 0.7) +
@@ -88,5 +92,5 @@ ggplot(datos_largos, aes(x = Corte, y = PF, color = Línea, group = Línea)) +
   stat_summary(fun = mean, geom = "point", size = 2) +
   theme_minimal() +
   labs(y = "Producción de forraje (g MS/m)", x = "Corte") 
-#lol aca puso total d mm y C en el grafico porque hice mal la base de datos anterior, revisar ese codigo
+
 
