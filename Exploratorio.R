@@ -102,17 +102,23 @@ ggplot(datos_largos, aes(x = Corte, y = PF, color = Línea, group = Línea)) +
 
 
 ## a chequear, puse solo años 23-24 y relativizado a cantidad inicial de plantulas
-datos_largos <- crudos %>%
+datos_largos_PF <- crudos %>%
   pivot_longer(
-    cols = starts_with("PF "),
+    cols = c("PF 1", "PF 2", "PF 3", "PF 4"),
     names_to = "Corte",
     values_to = "PF",
     names_pattern = "PF (.*)"
   ) %>%
-  filter(!is.na(PF), 
-         !Corte %in% c("Total", "total.ºC", "total.mm", "total.d")) %>%
-  filter(Año == "23-24") %>%                      # solo ciclo 23-24
-  mutate(PF_rel = PF / `Pl/m`)                    # relativizado por plantas/m
+  mutate(
+    PF_rel = PF / `Pl/m`,
+    Corte = factor(Corte, levels = c("1","2","3","4"))) %>%
+  select(Año, Localidad, Línea, Bloque, Corte, PF)
+
+tablas_PF_por_sitio <- datos_largos_PF %>%
+  group_split(Localidad)
+tablas_PF_por_sitio
+# relativizado por plantas/m
+
 
 # Boxplots relativizados
 ggplot(datos_largos, aes(x = Corte, y = PF_rel, fill = Línea)) +
@@ -147,4 +153,31 @@ ggplot(datos_largos, aes(x = Corte, y = PF_rel, color = Línea, group = Línea))
       #Reconquista: K14
 
 
-#Si yo hay lo mismo con gramos por °C los graficos deberian ser identicos 
+#Si yo hago lo mismo con gramos por °C Las relaciones tienen que ser las mismas!
+
+#TEMPERATU:
+datos_TC <- crudos %>%
+  pivot_longer(
+    cols = matches("^TC\\.ºC [1-4]$"),    # columnas TC.ºC 1,2,3,4
+    names_to = "Corte",
+    values_to = "TC"
+  ) %>%
+  filter(!is.na(TC)) %>%
+  filter(Año == "23-24") %>%
+  mutate(
+    TC_rel = TC / `Pl/m`,                          # relativizado por plantas
+    Corte = factor(gsub("TC.ºC ", "", Corte),      # dejar solo número de corte
+                   levels = c("1", "2", "3", "4"))  # porque la 4 no sale en los grafico :( ??
+  )
+ggplot(datos_TC, aes(x = Corte, y = TC_rel, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  facet_wrap(~Localidad) +
+  theme_minimal() +
+  labs(y = "TC.ºC relativo (°C acumulados / planta)", 
+       x = "Corte",
+       title = "Medias de TC.ºC relativo por cortes en cada localidad")
+#Efectivamente las relaciones entre lineas dentro de cada sitio se conservan, el perfil no porque la T en cada corte es distinta
+
+# LLUVIA
+
