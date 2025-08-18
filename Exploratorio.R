@@ -42,7 +42,7 @@ tabla_valores <- Plantulas %>%
   )
 
   #Produccion de semillas: en esto hay algo interesante, parece q no todas las semillas producidas son "verdaderas" hay semillas llenas y semillas vacias, asique estimo que lo importante es q haya muchas llenas y no importa tanto el resto.
-  #Macollos: es tipo la cantidad de pastitos que salen por planta jaja pueden ser de hojas o reproductivos.
+  #Macollos: es tipo la cantidad de pastitos que salen por planta, pueden ser de hojas o reproductivos.
             #DMT: densidad total de macollos. 
             #DMR: densidad de macollos reproductivos
             #MR: Macollos reproductivos/macollos totales
@@ -112,4 +112,31 @@ ggplot(datos_largos, aes(x = Corte, y = PF, color = Línea, group = Línea)) +
 #   UF93 es la peor de todas
 
 
+## a chequear, puse solo años 23-24 y relativizado a cantidad inicial de plantulas
+datos_largos <- crudos %>%
+  pivot_longer(
+    cols = starts_with("PF "),
+    names_to = "Corte",
+    values_to = "PF",
+    names_pattern = "PF (.*)"
+  ) %>%
+  filter(!is.na(PF), 
+         !Corte %in% c("Total", "total.ºC", "total.mm", "total.d")) %>%
+  filter(Año == "23-24") %>%                      # solo ciclo 23-24
+  mutate(PF_rel = PF / `Pl/m`)                    # relativizado por plantas/m
 
+# Boxplots relativizados
+ggplot(datos_largos, aes(x = Corte, y = PF_rel, fill = Línea)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+  facet_wrap(~Línea) +
+  theme_minimal() +
+  labs(y = "Producción relativa (g MS / planta)", x = "Corte")
+
+# Línea con medias relativizadas
+ggplot(datos_largos, aes(x = Corte, y = PF_rel, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", size = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  theme_minimal() +
+  labs(y = "Producción relativa (g MS / planta)", x = "Corte")
+
+# k es el mejor despues J , L y ultimo U
