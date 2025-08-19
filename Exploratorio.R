@@ -16,6 +16,8 @@ crudos <- read_excel("CJB_Datos concurso jovenes de bioestadistica.xlsx")
 
 summary(crudos)
 
+# Paso a factor las variables que crrespondan
+crudos$Bloque<- as.factor(crudos$Bloque)
 #veo si esta balanceado entre tratamientos
 table(crudos$Año)
 table(crudos$Localidad)
@@ -41,6 +43,49 @@ tabla_valores <- Plantulas %>%
     values_from = Pl_m
   )
 
+#### HAGO PLANTAS RELATIVIZADAS ####
+
+# 1) Tomamos como referencia la densidad de plantas (Pl/m) de 23-24
+plantas_ref <- crudos %>%
+  filter(Año == "23-24") %>%
+  group_by(Localidad, Línea, Bloque) %>%
+  summarise(Pl_m_ref = mean(`Pl/m`, na.rm = TRUE), .groups = "drop")
+
+# 2) Creamos la base 'relativos'
+relativos <- crudos %>%
+  left_join(plantas_ref, by = c("Localidad", "Línea", "Bloque")) %>%
+  mutate(
+    # usamos siempre Pl/m de 23-24 como denominador
+    Pl_m_usada = ifelse(Año == "24-25", Pl_m_ref, `Pl/m`)
+  ) %>%
+  # 3) Dividimos todas las variables numéricas (excepto Pl/m y las auxiliares)
+  mutate(across(
+    where(is.numeric) & !c("Pl/m","Pl_m_ref","Pl_m_usada"),
+    ~ .x / Pl_m_usada
+  )) %>%
+  # 4) Limpiamos auxiliares si no se quieren guardar
+  select(-Pl_m_ref, -Pl_m_usada)
+
+# Boxplot
+ggplot(datos_PFT, aes(x = Localidad, y = PF_rel, fill = Línea)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = 21) +
+  geom_jitter(aes(color = Línea), size = 2, alpha = 0.8,
+              position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8))+
+  facet_wrap(~Año) +
+  theme_minimal() +
+  labs(
+    y = "PF Total relativo (kg / planta)", 
+    x = "Localidad",
+    title = "PF Total relativo por localidad y línea"
+  ) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    panel.grid.major.x = element_blank()
+  )
+
+
+#####
+
   #Produccion de semillas: en esto hay algo interesante, parece q no todas las semillas producidas son "verdaderas" hay semillas llenas y semillas vacias, asique estimo que lo importante es q haya muchas llenas y no importa tanto el resto.
   #Macollos: es tipo la cantidad de pastitos que salen por planta, pueden ser de hojas o reproductivos.
             #DMT: densidad total de macollos. 
@@ -58,20 +103,152 @@ tabla_valores <- Plantulas %>%
 
 
 #Que variables tendriamos que analizar segun la pregunta en juego:
-#Preguntas:
-
+#Preguntas: ####
+print(
 #  1.	¿Existe interacción genotipo*ambiente?
+"Serian 5 modelos algunos de medidas repetidas (los cortes) 
+VR: semillas llenas , produccion total/ dias a produccion total ,  TC°C 1/2/3/4 y TC mm . CANTIDAD DE PLANTULAS (todas tienen la misma cantidad de semillas)
+VEF: Genotipo ambiente Genotipo*Ambiente  # Ver si da significativa la interaccion
+VA: Año",
+
 #  2.	¿Existen diferencias entre híbridos en la distribución de la producción de forraje y la producción total acumulada?
+"VR: produccion total/ dias a produccion total,   TC dia 1/2/3/4, TC°C 1/2/3/4 y TC mm
+VEF: Genotipo  # Ver si da significativa la interaccion
+VA: Año, Localidad",
+
 #  3.	¿Existen diferencias entre las localidades en la distribución de la producción de forraje y la producción total acumulada?
+"VR: produccion total/ dias a produccion total,   TC dia 1/2/3/4
+VEF: Localidad  # Ver si da significativa la interaccion
+VA: Año, Genotipo",
+
 #  4.	¿El uso de tasas de acumulación (por día, grado-día o mm de precipitación) permite corregir las diferencias entre frecuencias de cortes (periodo de tiempo transcurrido entre cortes sucesivos) y diferencias ambientales entre localidades?
-#  5.	¿Existen diferencias entre híbridos en la densidad de inflorescencias, producción de semillas y porcentaje de llenado de semillas?
-#  6.	¿Existen diferencias entre las localidades en la densidad de inflorescencias, producción de semillas y porcentaje de llenado de semillas?
-#  7.	Cuál sería el mejor híbrido y cuál sería la localidad más apropiada para la producción de semillas?
+"Dos ideas: 
+  3 Modelos:
+    VEF (una por modelo): TC dias, TC mm y TC °C.
+    VA: Lugar", # La idea es ver si la varianza explicada por lugar es similar a la explicada por bloque. Dia deberia tener maxima Varianza entre lugares e ir disminuyendo con °C o mm. 
+    #Si con °C o mm la varianza entre bloques es similar a entre sitios entonces puedo quedarme tranqui de que mm o °C es una buena forma de relativizar.
+    #No estoy segura de que se pueda poner como VA a bloque en dicho caso puedo ver de la varianza relativa Varianza explicada por VA/ varianza residual
+    
   
+#  5.	¿Existen diferencias entre híbridos en la densidad de inflorescencias, producción de semillas y porcentaje de llenado de semillas?
+"Medio que ya lo hicimos antes, habria q ver de encarar huntas las preguntas y despues ir al detalle y ya",
+#  6.	¿Existen diferencias entre las localidades en la densidad de inflorescencias, producción de semillas y porcentaje de llenado de semillas?
+"same shit",
+#  7.	Cuál sería el mejor híbrido y cuál sería la localidad más apropiada para la producción de semillas?
+"aca conclu con las dif sig etc no es la combinacion!" # tener en cuenta cuantas de las semillas dieron plantulas?
+)
+#########  
 
 ###Comienzo analisis exploratorio en orden de las preguntas  
-#  1.	¿Existen diferencias significativas entre híbridos en la producción total y en su distribución a lo largo del tiempo?
+##  1.	¿Existen diferencias significativas entre híbridos en la producción total y en su distribución a lo largo del tiempo? ####
       # Osea vamos a ver cuanto produce cada hibrido en cada luagar en cada temporada y tambien ver en q corte es mayor la produccion
+
+#configuro los datos para hacer analisis exploratorios
+datos_largos <- relativos %>%
+  pivot_longer(
+    cols = starts_with("PF "),
+    names_to = "Corte",
+    values_to = "PF",
+    names_pattern = "PF (.*)"
+  ) %>%
+  filter(!is.na(PF), 
+         !Corte %in% c("Total", "total.ºC", "total.mm", "total.d"))
+
+ggplot(datos_largos, aes(x = Corte, y = PF, fill = Línea)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+  facet_wrap(~Línea) +
+  theme_minimal() +
+  labs(y = "Producción de forraje (g MS/m)", x = "Corte")
+#los boxplots muestran distribucion bastante normal
+ggplot(datos_largos, aes(x = Corte, y = PF, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", size = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  theme_minimal() +
+  labs(y = "Producción de forraje (g MS/m)", x = "Corte") 
+# En general sin ver el detalle de los distintos lugares:
+
+
+
+## a chequear y relativizado a cantidad inicial de plantulas
+datos_largos_PF <- relativos %>%
+  pivot_longer(
+    cols = c("PF 1", "PF 2", "PF 3", "PF 4"),
+    names_to = "Corte",
+    values_to = "PF",
+    names_pattern = "PF (.*)"
+  ) %>%
+  mutate(,
+    Corte = factor(Corte, levels = c("1","2","3","4"))) %>%
+  select(Año, Localidad, Línea, Bloque, Corte, PF)
+
+tablas_PF_por_sitio <- datos_largos_PF %>%
+  group_split(Localidad)
+tablas_PF_por_sitio
+# relativizado por plantas/m
+
+
+# Boxplots relativizados
+ggplot(datos_largos, aes(x = Corte, y = PF, fill = Línea)) +
+  geom_boxplot(outlier.shape = NA, alpha = 0.7) +
+  facet_wrap(~Línea) +
+  theme_minimal() +
+  labs(y = "Producción relativa (g MS / planta)", x = "Corte")
+
+# Línea con medias relativizadas
+ggplot(datos_largos, aes(x = Corte, y = PF, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", size = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  theme_minimal() +
+  labs(y = "Producción relativa (g MS / planta)", x = "Corte")
+
+# k es el mejor despues J , L y ultimo U
+
+
+ggplot(datos_largos, aes(x = Corte, y = PF, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  facet_wrap(~Localidad) +
+  theme_minimal() +
+  labs(y = "Producción relativa (g MS / planta)", 
+       x = "Corte",
+       title = "Medias de PF relativa por corte y línea en cada localidad")
+
+## Hay una interaccion genotipo ambiente!
+      #Cerro azul: J7
+      #Colonia Caroya: K14 (falta el 3 corte en esta locacion)
+      #Corrientes: ta peleadoo 
+      #Reconquista: K14
+
+
+#Si yo hago lo mismo con gramos por °C Las relaciones tienen que ser las mismas!
+
+### TEMPERATURA: ####
+datos_TC <- relativos %>%
+  pivot_longer(
+    cols = matches("^TC\\.ºC [1-4]$"),    # columnas TC.ºC 1,2,3,4
+    names_to = "Corte",
+    values_to = "TC"
+  ) %>%
+  filter(!is.na(TC))%>%
+  mutate(                         # relativizado por plantas
+    Corte = factor(gsub("TC.ºC ", "", Corte),      # dejar solo número de corte
+                   levels = c("1", "2", "3", "4"))  # porque la 4 no sale en los grafico :( ??
+  )
+ggplot(datos_TC, aes(x = Corte, y = TC, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  facet_wrap(~Localidad) +
+  theme_minimal() +
+  labs(y = "TC.ºC relativo (°C acumulados / planta)", 
+       x = "Corte",
+       title = "Medias de TC.ºC relativo por cortes en cada localidad")
+#ahroa que cambiamos crudos a relativos nos da distinto!!
+#Efectivamente las relaciones entre lineas dentro de cada sitio se conservan, el perfil no porque la T en cada corte es distinta
+
+
+
+
+################################### a borrar codigo viejo!! #################
 
 #configuro los datos para hacer analisis exploratorios
 datos_largos <- crudos %>%
@@ -112,7 +289,7 @@ datos_largos_PF <- crudos %>%
   mutate(
     PF_rel = PF / `Pl/m`,
     Corte = factor(Corte, levels = c("1","2","3","4"))) %>%
-  select(Año, Localidad, Línea, Bloque, Corte, PF)
+  select(Año, Localidad, Línea, Bloque, Corte, PF, PF_rel)
 
 tablas_PF_por_sitio <- datos_largos_PF %>%
   group_split(Localidad)
@@ -121,14 +298,14 @@ tablas_PF_por_sitio
 
 
 # Boxplots relativizados
-ggplot(datos_largos, aes(x = Corte, y = PF_rel, fill = Línea)) +
+ggplot(datos_largos_PF, aes(x = Corte, y = PF_rel, fill = Línea)) +
   geom_boxplot(outlier.shape = NA, alpha = 0.7) +
   facet_wrap(~Línea) +
   theme_minimal() +
   labs(y = "Producción relativa (g MS / planta)", x = "Corte")
 
 # Línea con medias relativizadas
-ggplot(datos_largos, aes(x = Corte, y = PF_rel, color = Línea, group = Línea)) +
+ggplot(datos_largos_PF, aes(x = Corte, y = PF_rel, color = Línea, group = Línea)) +
   stat_summary(fun = mean, geom = "line", size = 1) +
   stat_summary(fun = mean, geom = "point", size = 2) +
   theme_minimal() +
@@ -137,7 +314,7 @@ ggplot(datos_largos, aes(x = Corte, y = PF_rel, color = Línea, group = Línea))
 # k es el mejor despues J , L y ultimo U
 
 
-ggplot(datos_largos, aes(x = Corte, y = PF_rel, color = Línea, group = Línea)) +
+ggplot(datos_largos_PF, aes(x = Corte, y = PF_rel, color = Línea, group = Línea)) +
   stat_summary(fun = mean, geom = "line", linewidth = 1) +
   stat_summary(fun = mean, geom = "point", size = 2) +
   facet_wrap(~Localidad) +
@@ -147,10 +324,10 @@ ggplot(datos_largos, aes(x = Corte, y = PF_rel, color = Línea, group = Línea))
        title = "Medias de PF relativa por corte y línea en cada localidad")
 
 ## Hay una interaccion genotipo ambiente!
-      #Cerro azul: J7
-      #Colonia Caroya: K14 (falta el 3 corte en esta locacion)
-      #Corrientes: ta peleadoo 
-      #Reconquista: K14
+#Cerro azul: J7
+#Colonia Caroya: K14 (falta el 3 corte en esta locacion)
+#Corrientes: ta peleadoo 
+#Reconquista: K14
 
 
 #Si yo hago lo mismo con gramos por °C Las relaciones tienen que ser las mismas!
@@ -177,7 +354,60 @@ ggplot(datos_TC, aes(x = Corte, y = TC_rel, color = Línea, group = Línea)) +
   labs(y = "TC.ºC relativo (°C acumulados / planta)", 
        x = "Corte",
        title = "Medias de TC.ºC relativo por cortes en cada localidad")
-#Efectivamente las relaciones entre lineas dentro de cada sitio se conservan, el perfil no porque la T en cada corte es distinta
+#################################
+
+
+
+
+
+
+
+
+
+
+### PRODUCCION DE SEMILLAS ####
+pl_ref <- crudos %>% # despues habia que cambiarlo para que use directamente la base de datos relativizadas.
+  filter(Año == "23-24") %>%
+  distinct(Localidad, Línea, Bloque, .keep_all = TRUE) %>%
+  select(Localidad, Línea, Bloque, Pl_m_ref = `Pl/m`)
+
+datos_Semillas <- crudos %>%
+  left_join(pl_ref, by = c("Localidad", "Línea", "Bloque")) %>%
+  mutate(
+    Prod_Sem_rel      = `Prod. Sem` / Pl_m_ref,
+    Prod_S_llenas_rel = `Prod. S. llenas` / Pl_m_ref
+  )
+
+datos_Semillas<-relativos
+Prod_Sem_rel<-relativos$`Prod. Sem`
+Prod_S_llenas_rel<-relativos$`Prod. S. llenas`
+ggplot(datos_Semillas, aes(x = Localidad, y = Prod_Sem_rel, fill = Línea)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA, position = position_dodge(width = 0.8)) +
+  geom_jitter(aes(color = Línea), size = 2, alpha = 0.8,
+              position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8)) +
+  facet_wrap(~Año) +
+  labs(title = "Producción de Semillas relativizada (Pl/m 23-24 por Bloque)",
+       y = "Prod. Sem / Pl/m (23-24)", x = "Localidad") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_color_brewer(palette = "Dark2")
+
+ggplot(datos_Semillas, aes(x = Localidad, y = Prod_S_llenas_rel, fill = Línea)) +
+  geom_boxplot(alpha = 0.7, outlier.shape = NA, position = position_dodge(width = 0.8)) +
+  geom_jitter(aes(color = Línea), size = 2, alpha = 0.8,
+              position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8)) +
+  facet_wrap(~Año) +
+  labs(title = "Producción de Semillas Llenas relativizada (Pl/m 23-24 por Bloque)",
+       y = "Prod. Sem / Pl/m (23-24)", x = "Localidad") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  scale_fill_brewer(palette = "Set2") +
+  scale_color_brewer(palette = "Dark2")
+
 
 # LLUVIA
+
+#PRODUCCION TOTAL en cada sitio para cada planta 
+
 
