@@ -219,7 +219,26 @@ ggplot(datos_largos, aes(x = Corte, y = PF, color = Línea, group = Línea)) +
       #Corrientes: ta peleadoo 
       #Reconquista: K14
 
-
+### TEMPERATURA: ####
+datos_TC <- relativos %>%
+  pivot_longer(
+    cols = matches("^TC\\d [1-4]$"),    # columnas TC.ºC 1,2,3,4
+    names_to = "Corte",
+    values_to = "TC"
+  ) %>%
+  filter(!is.na(TC))%>%
+  mutate(                         # relativizado por plantas
+    Corte = factor(gsub("TC.ºC ", "", Corte),      # dejar solo número de corte
+                   levels = c("1", "2", "3", "4"))  # porque la 4 no sale en los grafico :( ??
+  )
+ggplot(datos_TC, aes(x = Corte, y = TC, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  facet_wrap(~Localidad) +
+  theme_minimal() +
+  labs(y = "TC.ºC relativo (°C acumulados / planta)", 
+       x = "Corte",
+       title = "Medias de TC.ºC relativo por cortes en cada localidad")
 #Si yo hago lo mismo con gramos por °C Las relaciones tienen que ser las mismas!
 
 ### TEMPERATURA: ####
@@ -344,7 +363,7 @@ datos_TC <- crudos %>%
   mutate(
     TC_rel = TC / `Pl/m`,                          # relativizado por plantas
     Corte = factor(gsub("TC.ºC ", "", Corte),      # dejar solo número de corte
-                   levels = c("1", "2", "3", "4"))  # porque la 4 no sale en los grafico :( ??
+                   levels = c("1", "2", "3", "4")) 
   )
 ggplot(datos_TC, aes(x = Corte, y = TC_rel, color = Línea, group = Línea)) +
   stat_summary(fun = mean, geom = "line", linewidth = 1) +
