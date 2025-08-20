@@ -66,22 +66,32 @@ relativos <- crudos %>%
   # 4) Limpiamos auxiliares si no se quieren guardar
   select(-Pl_m_ref, -Pl_m_usada)
 
-# Boxplot
-ggplot(datos_PFT, aes(x = Localidad, y = PF_rel, fill = Línea)) +
-  geom_boxplot(alpha = 0.7, outlier.shape = 21) +
-  geom_jitter(aes(color = Línea), size = 2, alpha = 0.8,
-              position = position_jitterdodge(jitter.width = 0.2, dodge.width = 0.8))+
-  facet_wrap(~Año) +
-  theme_minimal() +
-  labs(
-    y = "PF Total relativo (kg / planta)", 
-    x = "Localidad",
-    title = "PF Total relativo por localidad y línea"
-  ) +
-  theme(
-    axis.text.x = element_text(angle = 45, hjust = 1),
-    panel.grid.major.x = element_blank()
+
+#### Exploratorio de cantidad de plantulas q crecieron en cada lugar con cada linea ####
+datos_plot <- crudos %>%
+  filter(!is.na(`Pl/m`)) %>%
+  group_by(Localidad, Línea) %>%
+  summarise(
+    mean_pl = mean(`Pl/m`, na.rm = TRUE),
+    se_pl = sd(`Pl/m`, na.rm = TRUE) / sqrt(n()),
+    .groups = "drop"
   )
+
+ggplot(datos_plot, aes(x = Localidad, y = mean_pl, fill = Línea)) +
+  # puntos crudos alineados
+  geom_point(data = crudos %>% filter(!is.na(`Pl/m`)),
+             aes(x = Localidad, y = `Pl/m`, color = Línea),
+             position = position_dodge(width = 0.8),
+             size = 2, alpha = 0.8, inherit.aes = FALSE) +
+  labs(x = "Localidad", y = "Plántulas por metro",
+       title = "Cantidad de plántulas por línea en cada localidad") +
+  # barras de medias
+  geom_col(position = position_dodge(width = 0.8), alpha = 0.7) +
+  # barras de error
+  geom_errorbar(aes(ymin = mean_pl - se_pl, ymax = mean_pl + se_pl),
+                position = position_dodge(width = 0.8), width = 0.2) +
+  theme_minimal() +
+  theme(legend.position = "bottom") ### El analisis de esto lo continue en un doc aparte llamado "Cantidad de Plantulas.R" ahi esta el modelo y el cheque de sus supuestos
 
 
 #####
