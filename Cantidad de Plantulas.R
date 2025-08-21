@@ -144,3 +144,19 @@ contrastes_lineas
 # J7 / L37   0.647 0.1260 Inf     0.442     0.947    1  -2.239  0.0252
 # K14 / L37  0.656 0.1270 Inf     0.448     0.960    1  -2.171  0.0300
 
+
+## GRAFICOS ##
+
+
+# Emmeans en escala de respuesta
+emm_lineas <- emmeans(M_Plantulas_nb, ~ Línea*Localidad, type = "response")
+df_plot <- as.data.frame(emm_lineas)
+
+# Gráfico de barras con colores por línea y errores 95%
+ggplot(df_plot, aes(x = Localidad, y = response, fill = Línea)) +
+  geom_bar(stat = "identity", position = position_dodge(width = 0.8), color = "black") +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+                width = 0.2, position = position_dodge(width = 0.8)) +
+  labs(x = "Localidad", y = "Plántulas por metro (predicho)",
+       title = "Predicciones del modelo negativo binomial") +
+  theme_minimal()
