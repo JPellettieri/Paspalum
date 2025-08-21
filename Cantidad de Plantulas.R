@@ -15,6 +15,7 @@ library(DHARMa)
 library(emmeans)
 library(readxl)
 library(car)
+library(paletteer)
 
 
 crudos <- read_excel("CJB_Datos concurso jovenes de bioestadistica.xlsx")
@@ -77,8 +78,9 @@ testZeroInflation(simres)  # NO SE CUMPLE NI UN SUPUESTO :O
 
 ####### HAY SOBRE DISPERSION HAGO BINOM NEGATIVA ########
 library(MASS)
-M_Plantulas_nb <- glm.nb(`Pl/m` ~ Localidad * Línea, data = crudos)
+M_Plantulas_nb <- glm.nb(`Pl/m` ~ Localidad * Línea, data = crudos) #VA año
 Anova(M_Plantulas_nb, type = 3)
+summary(M_Plantulas_nb)
 
 #Supuestos (esta vez dan bien)
 simres_nb <- simulateResiduals(M_Plantulas_nb)
@@ -152,11 +154,19 @@ contrastes_lineas
 emm_lineas <- emmeans(M_Plantulas_nb, ~ Línea*Localidad, type = "response")
 df_plot <- as.data.frame(emm_lineas)
 
-# Gráfico de barras con colores por línea y errores 95%
+cols <- paletteer_d("vangogh::CafeDeNuit")
+
+# Reemplazar 4° por el 5°
+cols_mod <- cols
+cols_mod[2] <- cols[3]
+cols_mod[3] <- cols[2]
+cols_mod[4] <- cols[5]
+# Usar en el gráfico
 ggplot(df_plot, aes(x = Localidad, y = response, fill = Línea)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.8), color = "black") +
   geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
                 width = 0.2, position = position_dodge(width = 0.8)) +
   labs(x = "Localidad", y = "Plántulas por metro (predicho)",
        title = "Predicciones del modelo negativo binomial") +
+  scale_fill_manual(values = cols_mod) +
   theme_minimal()
