@@ -452,8 +452,33 @@ ggplot(datos_Semillas, aes(x = Localidad, y = Prod_S_llenas_rel, fill = Línea))
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   scale_fill_brewer(palette = "Set2") +
   scale_color_brewer(palette = "Dark2")
+#Macollos####
+#Densidad de Macollos, usando los datos crudos
 
-
+#Según línea
+ggplot(crudos, aes(x = Línea, y =`DMR`, fill = Línea)) +
+  geom_boxplot() +
+  labs(
+    title = "Cantidad de Macollor Reproductivos según cantidad de Macollos Totales(DMR) por Línea",
+    x = "Línea",
+    y = "DMR"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+#j7 da más macollos reproductivos (a simple vista)
+#Según localidad
+ggplot(crudos, aes(x = Localidad, y =`DMR`, fill = Localidad)) +
+  geom_boxplot() +
+  labs(
+    title = "Cantidad de Macollor Reproductivos según cantidad de Macollos Totales(DMR) por Localidad",
+    x = "Localidad",
+    y = "DMR"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+#Colonia Caroya posee un mayor DMR (habría que evaluar si difiere significativamente de Reconquista),
+#A notar que Corrientes tiene muy pocos, pese al alto número de plantas (acá no está estandarizado)
+#
 # LLUVIA ####
 datos_mm <- relativos %>%
   pivot_longer(
@@ -499,3 +524,23 @@ ggplot(relativos, aes(x = Localidad, y =`PF Total`, fill = Localidad)) +
   theme_minimal() +
   theme(legend.position = "none")
 
+#Producción por localidad sin usar a las líneas como factor
+ggplot(relativos, aes(x = Localidad, y =`PF total.d`, fill = Localidad)) +
+  geom_boxplot() +
+  labs(
+    title = "Producción relativizada (PFtotal.d) por Localidad por día",
+    x = "Localidad",
+    y = "PF total"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+#Producción por linea sin usar las localidades como factor
+ggplot(relativos, aes(x = Línea, y =`PF total.d`, fill = Línea)) +
+  geom_boxplot() +
+  labs(
+    title = "Producción relativizada (PFtotal.d) por Línea por día",
+    x = "Línea",
+    y = "PF total"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
