@@ -271,8 +271,27 @@ ggplot(datos_TC, aes(x = Corte, y = TC, color = Línea, group = Línea)) +
   labs(y = "TC.ºC relativo (°C acumulados / planta)", 
        x = "Corte",
        title = "Medias de TC.ºC relativo por cortes en cada localidad")
-#ahroa que cambiamos crudos a relativos nos da distinto!!
-#Efectivamente las relaciones entre lineas dentro de cada sitio se conservan, el perfil no porque la T en cada corte es distinta
+
+#Día####
+datos_dia <- relativos %>%
+  pivot_longer(
+    cols = matches("^TC\\.d [1-4]$"),    # columnas TC.d 1,2,3,4
+    names_to = "Corte",
+    values_to = "TC"
+  ) %>%
+  filter(!is.na(TC))%>%
+  mutate(                         # relativizado por plantas
+    Corte = factor(gsub("TC.d ", "", Corte),      # dejar solo número de corte
+                   levels = c("1", "2", "3", "4"))  # porque la 4 no sale en los grafico :( ??
+  )
+ggplot(datos_dia, aes(x = Corte, y = TC, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  facet_wrap(~Localidad) +
+  theme_minimal() +
+  labs(y = "TC.d relativo (TC por día / planta)", 
+       x = "Corte",
+       title = "Medias de TC.d relativo por cortes en cada localidad")
 
 
 
@@ -435,8 +454,48 @@ ggplot(datos_Semillas, aes(x = Localidad, y = Prod_S_llenas_rel, fill = Línea))
   scale_color_brewer(palette = "Dark2")
 
 
-# LLUVIA
+# LLUVIA ####
+datos_mm <- relativos %>%
+  pivot_longer(
+    cols = matches("^TC\\.mm [1-4]$"),    # columnas TC.mm 1,2,3,4
+    names_to = "Corte",
+    values_to = "TC"
+  ) %>%
+  filter(!is.na(TC))%>%
+  mutate(                         # relativizado por plantas
+    Corte = factor(gsub("TC.mm ", "", Corte),      # dejar solo número de corte
+                   levels = c("1", "2", "3", "4"))  # porque la 4 no sale en los grafico :( ??
+  )
+ggplot(datos_mm, aes(x = Corte, y = TC, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", linewidth = 1) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  facet_wrap(~Localidad) +
+  theme_minimal() +
+  labs(y = "TC.mm relativo (mm acumulados / planta)", 
+       x = "Corte",
+       title = "Medias de TC.mm relativo por cortes en cada localidad")
 
 #PRODUCCION TOTAL en cada sitio para cada planta 
-
+#Según linea x localidad
+ggplot(relativos, aes(x = Línea, y =`PF Total`, fill = Línea)) +
+  geom_boxplot() +
+  facet_wrap(~ Localidad) +
+  labs(
+    title = "Producción relativizada (PFtotal) por Línea en cada Localidad",
+    x = "Línea",
+    y = "PF total"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+#Según localidad x línea
+ggplot(relativos, aes(x = Localidad, y =`PF Total`, fill = Localidad)) +
+  geom_boxplot() +
+  facet_wrap(~ Línea) +
+  labs(
+    title = "Producción relativizada (PFtotal) por Localidad según la Línea",
+    x = "Localidad",
+    y = "PF total"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
 
