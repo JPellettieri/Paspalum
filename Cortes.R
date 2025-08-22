@@ -13,10 +13,10 @@ D_Cortes <- relativos %>%
 # 1) Pasar a formato largo todas las variables que dependen de corte
 DLargos_Cortes <- D_Cortes %>%
   pivot_longer(
-    cols = matches("^(PF|TC\\.|TTaPF|Ppt a PF|días a PF) [1-4]$"), 
-    names_to = c("Variable", "Corte"),
-    names_pattern = "^(.*) (\\d+)$",
-    values_to = "Valor"
+    cols = matches("^TC\\.d [1-4]$"),   # Busca TC.d 1, TC.d 2, etc.
+    names_to = "Corte",
+    names_pattern = "TC\\.d (\\d+)",     # Extrae el número del corte
+    values_to = "TCd"
   ) %>%
   mutate(
     Corte = as.integer(Corte),
@@ -26,8 +26,43 @@ DLargos_Cortes <- D_Cortes %>%
       Año == "23-24" ~ Corte + 3,     # segundo año → cortes 4-6
       TRUE ~ Corte                    # por si aparece otro valor
       ))
-# 3) Ahora tenés todas las variables en formato largo con corte continuo
+
+# Seleccionar sólo columnas de TC.d y pasar a largo
+DLargos_TCd <- relativos %>%
+  pivot_longer(
+    cols = matches("^TC\\.d [1-4]$"),   # Busca TC.d 1, TC.d 2, etc.
+    names_to = "Corte",
+    names_pattern = "TC\\.d (\\d+)",     # Extrae el número del corte
+    values_to = "TCd"
+  ) %>%
+  mutate(
+    Corte = as.integer(Corte),
+    # Definir índice de corte continuo
+    Corte_cont = ifelse(Año == "23-24", Corte, Corte + 3)
+  )
+
+
+###### MODELO #########
+library(lme4)
+
+# Modelo de medidas repetidas
+M_TCd <- lmer(
+  TCd ~ Localidad * Línea + (1 | Bloque) + (1 | Corte_cont),
+  data = DLargos_TCd
+)
+
+Anova(M_TCd) # HAy interaccion genotipo ambiente en cuanto a la dinamica de produccion por dia
+summary(M_TCd) #Falta chequer supuestos
 
 DLargos_Cortes %>%
-  arrange(Localidad, Línea, Bloque, Corte_cont) %>%
-  head(20)
+  ggplot(aes(x = Corte_cont, y = TCd, color = Línea, group = Línea)) +
+  stat_summary(fun = mean, geom = "line", size = 1.2) +
+  stat_summary(fun.data = mean_se, geom = "errorbar", width = 0.2) +
+  stat_summary(fun = mean, geom = "point", size = 2) +
+  facet_wrap(~ Localidad) +
+  labs(x = "Corte", y = "TC.d (promedio ± error estándar)",
+       title = "Evolución de TC.d por localidad",
+       color = "Línea") +
+  theme_minimal(base_size = 14)
+
+
