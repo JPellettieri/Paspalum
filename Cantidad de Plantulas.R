@@ -154,13 +154,12 @@ contrastes_lineas
 emm_lineas <- emmeans(M_Plantulas_nb, ~ Línea*Localidad, type = "response")
 df_plot <- as.data.frame(emm_lineas)
 
-cols <- paletteer_d("vangogh::CafeDeNuit")
+cols <- paletteer_d("ggthemes::excel_Depth")
 
 # Reemplazar 4° por el 5°
 cols_mod <- cols
-cols_mod[2] <- cols[3]
-cols_mod[3] <- cols[2]
-cols_mod[4] <- cols[5]
+cols_mod[2] <- cols[6]
+
 # Usar en el gráfico
 ggplot(df_plot, aes(x = Localidad, y = response, fill = Línea)) +
   geom_bar(stat = "identity", position = position_dodge(width = 0.8), color = "black") +
@@ -170,3 +169,4 @@ ggplot(df_plot, aes(x = Localidad, y = response, fill = Línea)) +
        title = "Predicciones del modelo negativo binomial") +
   scale_fill_manual(values = cols_mod) +
   theme_minimal()
+
