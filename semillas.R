@@ -139,8 +139,9 @@ testZeroInflation(res)#  Test de cero-inflación (exceso de ceros)
 
 summary(modelo_loc)
 car::Anova(modelo_loc) # Localidad 43.679  3  1.765e-09 ***
-
-########### Falta tukey ####
+#contraste
+tukey_loc <- pairs(emm_loc, adjust = "tukey")
+tukey_loc
 # Medias estimadas
 emm_loc <- emmeans(modelo_loc, ~ Localidad, type = "response") 
 emm_loc
@@ -204,7 +205,7 @@ pairs(emm_lineas, adjust = "tukey") #J7-L37 y J7-UF93
 cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "tukey")
 df_plot_loc <- as.data.frame(cld_loc)
 
-# Paleta de colores (misma que antes, con tu modificación)
+# Paleta de colores
 cols <- paletteer_d("ggthemes::excel_Depth")
 cols_mod <- cols
 cols_mod[2] <- cols[6]
