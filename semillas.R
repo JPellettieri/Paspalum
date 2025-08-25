@@ -58,9 +58,16 @@ ggplot(datos_ratio, aes(x = Línea, y = `%MR`, fill = Localidad)) +
        x = "Línea",
        title = "% Macollos reproductivos por Línea y Localidad") +
   theme_bw()
+#####                    MODELOS DMR                                    #######
+## Hay dif sig entre lineas? #sin relastivizar ####
+DMR_Linea <-  glmmTMB(DMR ~ Línea + (1|Localidad) + (1|Año),
+                      ziformula = ~1, family = nbinom2, data = crudos) #ziformula porque hay tantos 0 que rompe poisson y nbinom2 porque poisson no se banca el darma
+#supuestos
+res <- simulateResiduals(DMR_Linea)
+plot(res)
+testDispersion(res)#  Test de sobredispersión
+testZeroInflation(res)#  Test de cero-inflación (exceso de ceros)
 
-## Hay dif sig entre lineas? #sin relastivizar
-DMR_Linea <- lmer(DMR ~ Línea + (1|Localidad) + (1|Año), data = crudos)
 summary(DMR_Linea) 
 anova(DMR_Linea)  #Si
 emm_lineas <- emmeans(DMR_Linea, ~ Línea) #contraste
@@ -82,8 +89,8 @@ ggplot(df_plot, aes(x = Línea, y = emmean, fill = Línea)) + geom_col(color = "
   ) +
   theme_minimal(base_size = 13)
 
-## RELATIVIZADO A CANTIDAD DE PLANTULAS
-REL_DMR_Linea <- lmer(DMR ~ Línea + (1|Localidad) + (1|Año), data = relativos)
+## RELATIVIZADO A CANTIDAD DE PLANTULAS ####
+REL_DMR_Linea <- lmer(DMR ~ Línea + (1|Localidad) + (1|Año), data = relativos) ##Cambiar poner poison!
 summary(REL_DMR_Linea) 
 anova(REL_DMR_Linea)  #Si
 Remm_lineas <- emmeans(REL_DMR_Linea, ~ Línea) #contraste
@@ -101,9 +108,13 @@ ggplot(Rdf_plot, aes(x = Línea, y = emmean, fill = Línea)) + geom_col(color = 
   labs(
     x = "Línea",
     y = "Densidad de inflorescencias relativizado a la cantidad de plantulas",
-    title = "Medias estimadas de DMR"
-  ) +
-  theme_minimal(base_size = 13) 
+    title = "Medias estimadas de DMR" ) + theme_minimal(base_size = 13) 
+
+
+
+
+
+
 
 
 #cuantas semillas produce#
@@ -111,3 +122,36 @@ ggplot(Rdf_plot, aes(x = Línea, y = emmean, fill = Línea)) + geom_col(color = 
 
 
 #semillas llenas#
+
+## Hay dif entre localidades? # sin relativizar 
+# Modelo con Localidad como VE y Línea/Año como efectos aleatorios
+modelo_loc <- lmer(DMR ~ Localidad + (1|Línea) + (1|Año), data = crudos)
+
+# Medias estimadas de DMR por Localidad
+emm_loc <- emmeans(modelo_loc, ~ Localidad)
+
+# Comparaciones post hoc con letras
+cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "tukey")
+df_plot_loc <- as.data.frame(cld_loc)
+
+# Paleta de colores (misma que antes, con tu modificación)
+cols <- paletteer_d("ggthemes::excel_Depth")
+cols_mod <- cols
+cols_mod[2] <- cols[6]
+
+# Gráfico
+ggplot(df_plot_loc, aes(x = Localidad, y = emmean, fill = Localidad)) +
+  geom_col(color = "black") +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+                width = 0.2, size = 0.8) +
+  geom_text(aes(label = .group, y = emmean + 5),   # ajustá el +5 según escala de DMR
+            size = 5) +
+  scale_fill_manual(values = cols_mod) +
+  labs(
+    x = "Localidad",
+    y = "Densidad de inflorescencias (DMR, predicho)",
+    title = "Medias estimadas de DMR por localidad"
+  ) +
+  theme_minimal(base_size = 13)
+
+
