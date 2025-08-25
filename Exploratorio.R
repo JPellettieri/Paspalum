@@ -62,9 +62,9 @@ relativos <- crudos %>%
   mutate(across(
     where(is.numeric) & !c("Pl/m","Pl_m_ref","Pl_m_usada"),
     ~ .x / Pl_m_usada
-  )) %>%
+  )) 
   # 4) Limpiamos auxiliares si no se quieren guardar
-  select(-Pl_m_ref, -Pl_m_usada)
+  #select(-Pl_m_ref, -Pl_m_usada)
 
 
 #### Exploratorio de cantidad de plantulas q crecieron en cada lugar con cada linea ####
@@ -544,3 +544,4 @@ ggplot(relativos, aes(x = Línea, y =`PF total.d`, fill = Línea)) +
   ) +
   theme_minimal() +
   theme(legend.position = "none")
+
