@@ -34,7 +34,7 @@ Plantulas <- crudos %>%
   group_by(Año, Localidad, Línea) %>%
   summarise(Pl_m = mean(`Pl/m`, na.rm = TRUE)) # Es una paja que la variable tenga / habria que sacarsela a todas las varibles, podemos poner _ en su lugar
 print(Plantulas)
-
+summary(Plantulas)
 #alv faltan un monton de datos, faltan todos los de 2024 - 2025, ademas no todas las lineas tienen las mismas plantulas iniciales asique vamos a tener que relativizar!
 tabla_valores <- Plantulas %>%
   select(Año, Localidad, Línea, Pl_m) %>%
@@ -65,6 +65,112 @@ relativos <- crudos %>%
   )) 
   # 4) Limpiamos auxiliares si no se quieren guardar
   #select(-Pl_m_ref, -Pl_m_usada)
+
+
+###### TABLAS RESUMEN ######
+library(dplyr)
+
+# Preparar dataset con indicadores
+datos_resumen <- relativos %>%
+  mutate(
+    plantulas_x_gr = `Pl/m`,           # ya es por gramo
+    macollos = DMT,                    # macollos por plántula
+    porc_macollos_reprod = `%MR`,      # porcentaje
+    semillas_x_plantula = `Prod. Sem`, # ya relativizado
+    porc_semillas_llenas = `%llenado`,
+    pf_total = `PF Total`              # producción de forraje total
+  )
+
+# ---- Resumen por Línea ----
+tabla_linea <- datos_resumen %>%
+  group_by(Línea) %>%
+  summarise(
+    `Plántulas/g (mean ± sd)` = paste0(
+      round(mean(plantulas_x_gr, na.rm = TRUE), 2), " ± ",
+      round(sd(plantulas_x_gr, na.rm = TRUE), 2)
+    ),
+    `Macollos (mean ± sd)` = paste0(
+      round(mean(macollos, na.rm = TRUE), 2), " ± ",
+      round(sd(macollos, na.rm = TRUE), 2)
+    ),
+    `% macollos reproductivos (mean ± sd)` = paste0(
+      round(mean(porc_macollos_reprod, na.rm = TRUE), 2), " ± ",
+      round(sd(porc_macollos_reprod, na.rm = TRUE), 2)
+    ),
+    `Semillas/plántula (mean ± sd)` = paste0(
+      round(mean(semillas_x_plantula, na.rm = TRUE), 2), " ± ",
+      round(sd(semillas_x_plantula, na.rm = TRUE), 2)
+    ),
+    `% semillas llenas (mean ± sd)` = paste0(
+      round(mean(porc_semillas_llenas, na.rm = TRUE), 2), " ± ",
+      round(sd(porc_semillas_llenas, na.rm = TRUE), 2)
+    ),
+    `PF Total (mean ± sd)` = paste0(
+      round(mean(pf_total, na.rm = TRUE), 2), " ± ",
+      round(sd(pf_total, na.rm = TRUE), 2)
+    )
+  )
+
+# ---- Resumen por Localidad ----
+tabla_localidad <- datos_resumen %>%
+  group_by(Localidad) %>%
+  summarise(
+    `Plántulas/g (mean ± sd)` = paste0(
+      round(mean(plantulas_x_gr, na.rm = TRUE), 2), " ± ",
+      round(sd(plantulas_x_gr, na.rm = TRUE), 2)
+    ),
+    `Macollos (mean ± sd)` = paste0(
+      round(mean(macollos, na.rm = TRUE), 2), " ± ",
+      round(sd(macollos, na.rm = TRUE), 2)
+    ),
+    `% macollos reproductivos (mean ± sd)` = paste0(
+      round(mean(porc_macollos_reprod, na.rm = TRUE), 2), " ± ",
+      round(sd(porc_macollos_reprod, na.rm = TRUE), 2)
+    ),
+    `Semillas/plántula (mean ± sd)` = paste0(
+      round(mean(semillas_x_plantula, na.rm = TRUE), 2), " ± ",
+      round(sd(semillas_x_plantula, na.rm = TRUE), 2)
+    ),
+    `% semillas llenas (mean ± sd)` = paste0(
+      round(mean(porc_semillas_llenas, na.rm = TRUE), 2), " ± ",
+      round(sd(porc_semillas_llenas, na.rm = TRUE), 2)
+    ),
+    `PF Total (mean ± sd)` = paste0(
+      round(mean(pf_total, na.rm = TRUE), 2), " ± ",
+      round(sd(pf_total, na.rm = TRUE), 2)
+    )
+  )
+
+# ---- Resumen por Temporada (Año) ----
+tabla_temporada <- datos_resumen %>%
+  group_by(Año) %>%
+  summarise(
+    `Plántulas/g (mean ± sd)` = paste0(
+      round(mean(plantulas_x_gr, na.rm = TRUE), 2), " ± ",
+      round(sd(plantulas_x_gr, na.rm = TRUE), 2)
+    ),
+    `Macollos (mean ± sd)` = paste0(
+      round(mean(macollos, na.rm = TRUE), 2), " ± ",
+      round(sd(macollos, na.rm = TRUE), 2)
+    ),
+    `% macollos reproductivos (mean ± sd)` = paste0(
+      round(mean(porc_macollos_reprod, na.rm = TRUE), 2), " ± ",
+      round(sd(porc_macollos_reprod, na.rm = TRUE), 2)
+    ),
+    `Semillas/plántula (mean ± sd)` = paste0(
+      round(mean(semillas_x_plantula, na.rm = TRUE), 2), " ± ",
+      round(sd(semillas_x_plantula, na.rm = TRUE), 2)
+    ),
+    `% semillas llenas (mean ± sd)` = paste0(
+      round(mean(porc_semillas_llenas, na.rm = TRUE), 2), " ± ",
+      round(sd(porc_semillas_llenas, na.rm = TRUE), 2)
+    ),
+    `PF Total (mean ± sd)` = paste0(
+      round(mean(pf_total, na.rm = TRUE), 2), " ± ",
+      round(sd(pf_total, na.rm = TRUE), 2)
+    )
+  )
+
 
 
 #### Exploratorio de cantidad de plantulas q crecieron en cada lugar con cada linea ####

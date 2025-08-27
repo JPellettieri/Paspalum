@@ -24,6 +24,11 @@ cols <- paletteer_d("ggthemes::excel_Depth")
 cols_mod <- cols
 cols_mod[2] <- cols[6]
 
+str(relativos)
+summary(relativos$DMT)
+summary(relativos$DMR)
+summary(relativos$`Prod. Sem`)
+sd(relativos$`Prod. Sem`)
 #  5.	DMR
 "Medio que ya lo hicimos antes, habria q ver de encarar huntas las preguntas y despues ir al detalle y ya",
 #  6.	¿Existen diferencias entre las localidades en la densidad de inflorescencias, producción de semillas y porcentaje de llenado de semillas?
@@ -201,6 +206,8 @@ summary(modelo_GEI)
 anova(modelo_GEI)  #Si
 emm_lineas <- emmeans(modelo_GEI, ~ Línea) #contraste
 pairs(emm_lineas, adjust = "tukey") #J7-L37 y J7-UF93
+emm_localidad <- emmeans(modelo_GEI, ~ Localidad)
+pairs(emm_localidad, adjust = "tukey")
 # Comparaciones post hoc con letras
 cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "tukey")
 df_plot_loc <- as.data.frame(cld_loc)

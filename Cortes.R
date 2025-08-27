@@ -11,6 +11,11 @@ medidas_repetidas <- read_excel(
 
 str(medidas_repetidas)
 
+summary(relativos$`TC.d 1`)
+summary(relativos$`TC.d 2`)
+summary(relativos$`TC.d 3`)
+summary(relativos$`TC.d 4`)
+
 #Grafico
 ggplot(medidas_repetidas,
        aes(x = tiempo, y = PF.d, color = Localidad, group = interaction(Localidad, Línea, Bloque))) +
