@@ -176,7 +176,7 @@ anova(modelo)
 
 ###### Hago lo q nos dijo Adriana ####
 crudos$`PF Total`
-M_PFTotal <- lmer(`PF Total`~ Localidad*Línea+ Año + (1|Bloque), data = relativos)
+M_PFTotal <- lmer(`PF Total`~ Localidad*Línea + (1|Bloque) + Año , data = relativos)
 
 #supestos
 res <- simulateResiduals(M_PFTotal, n = 1000)
@@ -186,6 +186,7 @@ testDispersion(res)
 
 summary(M_PFTotal )
 anova(M_PFTotal )
+
 
 # Medias estimadas para Localidad
 emm_loc <- emmeans(M_PFTotal, ~ Localidad)
