@@ -4,12 +4,21 @@ library(dplyr)
 library(tidyr)
 library(ggplot2)
 
+cols <- paletteer_d("ggthemes::excel_Depth")
+cols_mod <- cols
+cols_mod[2] <- cols[6]
+
 medidas_repetidas <- read_excel(
   path = "CJB_Datos concurso jovenes de bioestadistica.xlsx",
   sheet = "Medidas repetidas en el tiempo"
 )
 summary(medidas_repetidas) 
 str(medidas_repetidas)
+
+summary(relativos$`TC.d 1`)
+summary(relativos$`TC.d 2`)
+summary(relativos$`TC.d 3`)
+summary(relativos$`TC.d 4`)
 
 #Grafico
 ggplot(medidas_repetidas,
@@ -165,5 +174,96 @@ anova(modelo)
 # #   ) +
 # #   theme_minimal(base_size = 14)
 
+###### Hago lo q nos dijo Adriana ####
+crudos$`PF Total`
+M_PFTotal <- lmer(`PF Total`~ Localidad*Línea + (1|Bloque) + Año , data = relativos)
+
+#supestos
+res <- simulateResiduals(M_PFTotal, n = 1000)
+plot(res)
+testResiduals(res)
+testDispersion(res)
+
+summary(M_PFTotal )
+anova(M_PFTotal )
+
+
+# Medias estimadas para Localidad
+emm_loc <- emmeans(M_PFTotal, ~ Localidad)
+emm_loc
+
+# Comparaciones post hoc con letras
+pairs(emmeans(M_PFTotal, ~Línea|Localidad), adjust = "tukey")
+cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "tukey")
+df_plot_loc <- as.data.frame(cld_loc)
+
+# Paleta de colores
+cols <- paletteer_d("ggthemes::excel_Depth")
+cols_mod <- cols
+cols_mod[2] <- cols[6]   # opcional, para personalizar como en tu ejemplo
+
+# Gráfico para Localidad
+ggplot(df_plot_loc, aes(x = Localidad, y = emmean, fill = Localidad)) +
+  geom_col(color = "black") +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+                width = 0.2, size = 0.8) +
+  geom_text(aes(label = .group, y = emmean + 30),   # ajustá el +30 según escala de PF Total
+            size = 5) +
+  scale_fill_manual(values = cols_mod) +
+  labs(
+    x = "Localidad",
+    y = "PF Total (media marginal)",
+    title = "Medias estimadas de PF Total por localidad"
+  ) +
+  theme_minimal(base_size = 14)
+
+
+# ---- Si querés hacer lo mismo por LÍNEA ----
+emm_lin <- emmeans(M_PFTotal, ~ Línea)
+cld_lin <- multcomp::cld(emm_lin, Letters = letters, adjust = "tukey")
+df_plot_lin <- as.data.frame(cld_lin)
+
+ggplot(df_plot_lin, aes(x = Línea, y = emmean, fill = Línea)) +
+  geom_col(color = "black") +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+                width = 0.2, size = 0.8) +
+  geom_text(aes(label = .group, y = emmean + 30),   # ajustá el +30 según escala de PF Total
+            size = 5) +
+  scale_fill_manual(values = cols_mod) +
+  labs(
+    x = "Línea",
+    y = "PF Total (media marginal)",
+    title = "Medias estimadas de PF Total por línea"
+  ) +
+  theme_minimal(base_size = 14)
+
+######## Linea*Localidad ###
+
+# Estimación de medias marginales
+emm <- emmeans(M_PFTotal, ~ Localidad*Línea)
+
+# Comparaciones múltiples de Tukey
+pairs_emm <- contrast(emm, method = "pairwise", adjust = "tukey")
+pairs_emm
+
+# Grupos de Tukey (letras)
+cld_emm <- multcomp::cld(emm, adjust = "tukey", Letters = letters, alpha = 0.05)
+cld_emm
+
+# Gráfico
+ggplot(cld_emm, aes(x =interaction(Localidad, Línea), 
+                    y = emmean, 
+                    fill = Línea)) +
+  geom_col(position = position_dodge(width = 0.9), color = "black") +
+  geom_errorbar(aes(ymin = emmean - SE, ymax = emmean + SE),
+                width = 0.2, position = position_dodge(width = 0.9)) +
+  geom_text(aes(label = .group, y = emmean + SE + 5), 
+            vjust = 0, size = 5) +
+  scale_fill_manual(values = cols_mod) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  labs(x = "Localidad × Línea", y = "PF Total (media ± SE)",
+       title = "Comparaciones entre combinaciones de Localidad y Línea") +
+  theme_bw()+
+  coord_flip()
 
 
