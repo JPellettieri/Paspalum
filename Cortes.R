@@ -12,8 +12,34 @@ medidas_repetidas <- read_excel(
   path = "CJB_Datos concurso jovenes de bioestadistica.xlsx",
   sheet = "Medidas repetidas en el tiempo"
 )
+medidas_repetidas$Bloque<- as.factor(medidas_repetidas$Bloque)
+medidas_repetidas$Línea<- as.factor(medidas_repetidas$Línea)
+medidas_repetidas$Localidad<- as.factor(medidas_repetidas$Localidad)
+medidas_repetidas$Corte<- as.factor(medidas_repetidas$Corte)
 summary(medidas_repetidas) 
 str(medidas_repetidas)
+
+
+#Relativos
+# 1) Tomamos como referencia la densidad de plantas (Pl/m) de 23-24
+plantas_ref <- crudos %>%
+  filter(Año == "23-24") %>%
+  group_by(Localidad, Línea, Bloque) %>%
+  summarise(Pl_m_ref = mean(`Pl/m`, na.rm = TRUE), .groups = "drop")
+
+# 2) Creamos la base 'relativos'
+medidas_repetidas_Rel <-medidas_repetidas %>%
+  left_join(plantas_ref, by = c("Localidad", "Línea", "Bloque")) %>%
+  mutate(
+    # usamos siempre Pl/m de 23-24 como denominador
+    Pl_m_usada =  Pl_m_ref
+  ) %>%
+  # 3) Dividimos todas las variables numéricas (excepto Pl/m y las auxiliares)
+  mutate(across(
+    where(is.numeric) & !c("Pl_m_ref","Pl_m_usada", "tiempo"),
+    ~ .x / Pl_m_usada
+  )) 
+str(medidas_repetidas_Rel)
 
 summary(relativos$`TC.d 1`)
 summary(relativos$`TC.d 2`)
@@ -61,11 +87,18 @@ library(lmerTest)  # para p-valores
 # Línea y Bloque son efectos aleatorios (anidados)
 # Corte sería la medida repetida (tiempo)
 
-modelo <- lmer(PF.d ~ Localidad*tiempo + (1|Bloque/Línea), data = medidas_repetidas)
+Dias <- glmer(PF.d ~ Localidad*tiempo*Línea + (1|Bloque),family=gaussian , data = medidas_repetidas_Rel)
 
-summary(modelo)
-anova(modelo)
+summary(M_PDias)
+anova(M_PDias)
 
+res <- simulateResiduals(M_PDias, n = 1000)
+plot(res)
+testResiduals(res)
+testDispersion(res)
+
+summary(M_PFTotal )
+anova(M_PFTotal )
 
 
 
