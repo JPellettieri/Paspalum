@@ -8,7 +8,7 @@ medidas_repetidas <- read_excel(
   path = "CJB_Datos concurso jovenes de bioestadistica.xlsx",
   sheet = "Medidas repetidas en el tiempo"
 )
-
+summary(medidas_repetidas) 
 str(medidas_repetidas)
 
 #Grafico
