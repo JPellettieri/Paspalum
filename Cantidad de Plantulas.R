@@ -72,6 +72,7 @@ overdisp_fun(M_Plantulas) # TERRIBLE SOBREDISPERSION HAY
 
 library(DHARMa)
 simres <- simulateResiduals(M_Plantulas)
+simres
 plot(simres)   # gráfica diagnóstica
 testDispersion(simres)
 testZeroInflation(simres)  # NO SE CUMPLE NI UN SUPUESTO :O
