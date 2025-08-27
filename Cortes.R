@@ -9,7 +9,7 @@ cols_mod <- cols
 cols_mod[2] <- cols[6]
 
 medidas_repetidas <- read_excel(
-  path = "CJB_Datos concurso jovenes de bioestadistica.xlsx",
+  path = "CJB_Datos concurso jovenes de bioestadistica (viejo).xlsx",
   sheet = "Medidas repetidas en el tiempo"
 )
 medidas_repetidas$Bloque<- as.factor(medidas_repetidas$Bloque)
@@ -39,7 +39,38 @@ medidas_repetidas_Rel <-medidas_repetidas %>%
     where(is.numeric) & !c("Pl_m_ref","Pl_m_usada", "tiempo"),
     ~ .x / Pl_m_usada
   )) 
-str(medidas_repetidas_Rel)
+str(medidas_repetidas)
+str(crudos)
+
+library(dplyr)
+
+# Paso 1: aseguramos tipos de datos iguales
+crudos2 <- crudos %>%
+  mutate(Localidad = as.factor(Localidad),
+         Línea     = as.factor(Línea),
+         Año       = as.character(Año),   # igual que en medidas_repetidas
+         Bloque    = as.factor(Bloque))
+
+medidas_repetidas2 <- medidas_repetidas %>%
+  mutate(Localidad = as.factor(Localidad),
+         Línea     = as.factor(Línea),
+         Año       = as.character(Año),
+         Bloque    = as.factor(Bloque))
+
+# Paso 2: unir Pl/m
+medidas_repetidas_joined <- medidas_repetidas2 %>%
+  left_join(crudos2 %>% select(Año, Localidad, Línea, Bloque, `Pl/m`),
+            by = c("Año", "Localidad", "Línea", "Bloque"))
+medidas_repetidas_expand <- medidas_repetidas_joined %>%
+  # filtrar solo los datos del año 23-24
+  filter(Año == "23-24") %>%
+  # duplicar cambiando el año a 24-25
+  mutate(Año = "24-25") %>%
+  # unirlos con la base original
+  bind_rows(medidas_repetidas)
+
+
+
 
 summary(relativos$`TC.d 1`)
 summary(relativos$`TC.d 2`)
@@ -87,7 +118,7 @@ library(lmerTest)  # para p-valores
 # Línea y Bloque son efectos aleatorios (anidados)
 # Corte sería la medida repetida (tiempo)
 
-Dias <- glmer(PF.d ~ Localidad*tiempo*Línea + (1|Bloque),family=gaussian , data = medidas_repetidas_Rel)
+M_PDias <- glmer(PF.d ~ Localidad*Línea*tiempo + (1|Bloque),family=gaussian , data = medidas_repetidas)
 
 summary(M_PDias)
 anova(M_PDias)
@@ -97,8 +128,8 @@ plot(res)
 testResiduals(res)
 testDispersion(res)
 
-summary(M_PFTotal )
-anova(M_PFTotal )
+summary(M_PDias )
+anova(M_PDias)
 
 
 
