@@ -9,7 +9,7 @@ cols_mod <- cols
 cols_mod[2] <- cols[6]
 
 medidas_repetidas <- read_excel(
-  path = "CJB_Datos concurso jovenes de bioestadistica (viejo).xlsx",
+  path = "CJB_Datos concurso jovenes de bioestadistica.xlsx",
   sheet = "Medidas repetidas en el tiempo"
 )
 medidas_repetidas$Bloque<- as.factor(medidas_repetidas$Bloque)
@@ -19,56 +19,7 @@ medidas_repetidas$Corte<- as.factor(medidas_repetidas$Corte)
 summary(medidas_repetidas) 
 str(medidas_repetidas)
 
-
-#Relativos
-# 1) Tomamos como referencia la densidad de plantas (Pl/m) de 23-24
-plantas_ref <- crudos %>%
-  filter(Año == "23-24") %>%
-  group_by(Localidad, Línea, Bloque) %>%
-  summarise(Pl_m_ref = mean(`Pl/m`, na.rm = TRUE), .groups = "drop")
-
-# 2) Creamos la base 'relativos'
-medidas_repetidas_Rel <-medidas_repetidas %>%
-  left_join(plantas_ref, by = c("Localidad", "Línea", "Bloque")) %>%
-  mutate(
-    # usamos siempre Pl/m de 23-24 como denominador
-    Pl_m_usada =  Pl_m_ref
-  ) %>%
-  # 3) Dividimos todas las variables numéricas (excepto Pl/m y las auxiliares)
-  mutate(across(
-    where(is.numeric) & !c("Pl_m_ref","Pl_m_usada", "tiempo"),
-    ~ .x / Pl_m_usada
-  )) 
-str(medidas_repetidas)
-str(crudos)
-
 library(dplyr)
-
-# Paso 1: aseguramos tipos de datos iguales
-crudos2 <- crudos %>%
-  mutate(Localidad = as.factor(Localidad),
-         Línea     = as.factor(Línea),
-         Año       = as.character(Año),   # igual que en medidas_repetidas
-         Bloque    = as.factor(Bloque))
-
-medidas_repetidas2 <- medidas_repetidas %>%
-  mutate(Localidad = as.factor(Localidad),
-         Línea     = as.factor(Línea),
-         Año       = as.character(Año),
-         Bloque    = as.factor(Bloque))
-
-# Paso 2: unir Pl/m
-medidas_repetidas_joined <- medidas_repetidas2 %>%
-  left_join(crudos2 %>% select(Año, Localidad, Línea, Bloque, `Pl/m`),
-            by = c("Año", "Localidad", "Línea", "Bloque"))
-medidas_repetidas_expand <- medidas_repetidas_joined %>%
-  # filtrar solo los datos del año 23-24
-  filter(Año == "23-24") %>%
-  # duplicar cambiando el año a 24-25
-  mutate(Año = "24-25") %>%
-  # unirlos con la base original
-  bind_rows(medidas_repetidas)
-
 
 
 
@@ -118,7 +69,7 @@ library(lmerTest)  # para p-valores
 # Línea y Bloque son efectos aleatorios (anidados)
 # Corte sería la medida repetida (tiempo)
 
-M_PDias <- glmer(PF.d ~ Localidad*Línea*tiempo + (1|Bloque),family=gaussian , data = medidas_repetidas)
+M_PDias <- glmer((PF.d/PL_m) ~ Localidad*Línea*tiempo + (1|Bloque),family=gaussian , data = medidas_repetidas)
 
 summary(M_PDias)
 anova(M_PDias)
