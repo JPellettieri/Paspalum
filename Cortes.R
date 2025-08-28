@@ -1,4 +1,4 @@
-## Linea temporal
+
 # Pivotar las columnas de días a PF a formato largo
 library(dplyr)
 library(tidyr)
@@ -148,8 +148,44 @@ anova(M_sinInt2 , M_sinInt3 , M_sinInt4)
 res <- simulateResiduals(fittedModel = M_sinInt3, n = 1000) # cumple los supuestos
 plot(res)
 
+emm_loc_lin <- emmeans(M_sinInt3, ~ Localidad * Línea)
 
+emm_loc_lin_resp <- summary(emm_loc_lin, type = "response")
+emm_loc_lin_resp
 
+pairs_all <- pairs(emm_loc_lin)
+summary(pairs_all)
+
+pairs_all <- pairs(emm_loc_lin)
+summary(pairs_all, infer = TRUE)
+library(multcomp)
+cld_link <- cld(emm_loc_lin, Letters = letters, type = "link")
+cld_link
+
+cld_link_df <- as.data.frame(cld_link)
+
+# Convert emm_resp to a plain data.frame
+emm_resp_df <- as.data.frame(emm_resp)
+
+# Now join by the factor columns
+cld_resp <- left_join(emm_resp_df,
+                      cld_link_df[, c("Localidad", "Línea", ".group")],
+                      by = c("Localidad", "Línea"))
+
+cld_resp
+
+ggplot(cld_resp, aes(x = Localidad, y = response, color = Línea)) +
+  geom_point(position = position_dodge(width = 0.6), size = 3) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+                width = 0.2, position = position_dodge(width = 0.6)) +
+  geom_text(aes(label = .group),
+            position = position_dodge(width = 0.6),
+            vjust = -0.8, size = 5) +
+  scale_color_manual(values = cols_mod) + 
+  labs(y = "Estimated mean PF.d / PL_m",
+       x = "Línea",
+       title = "Estimated marginal means (Gamma GLMM) with group letters") +
+  theme_minimal(base_size = 14)
 ###################################################################
 ##########################    Producion Total      ###########################################
 #####################################################################
@@ -180,7 +216,7 @@ cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "tukey")
 df_plot_loc <- as.data.frame(cld_loc)
 
 # Paleta de colores
-cols <- paletteer_d("ggthemes::excel_Depth")
+cols <- paletteer::paletteer_d("ggthemes::excel_Depth")
 cols_mod <- cols
 cols_mod[2] <- cols[6]   # opcional, para personalizar como en tu ejemplo
 
