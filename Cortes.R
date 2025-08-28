@@ -148,7 +148,7 @@ anova(M_sinInt2 , M_sinInt3 , M_sinInt4)
 res <- simulateResiduals(fittedModel = M_sinInt3, n = 1000) # cumple los supuestos
 plot(res)
 
-emm_loc_lin <- emmeans(M_sinInt3, ~ Localidad * Línea)
+emm_loc_lin <- emmeans(M_sinInt3, ~ Línea |Localidad)
 
 emm_loc_lin_resp <- summary(emm_loc_lin, type = "response")
 emm_loc_lin_resp
