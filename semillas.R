@@ -30,12 +30,12 @@ summary(relativos$DMR)
 summary(relativos$`Prod. Sem`)
 sd(relativos$`Prod. Sem`)
 #  5.	DMR
-"Medio que ya lo hicimos antes, habria q ver de encarar huntas las preguntas y despues ir al detalle y ya",
+#"Medio que ya lo hicimos antes, habria q ver de encarar huntas las preguntas y despues ir al detalle y ya",
 #  6.	¿Existen diferencias entre las localidades en la densidad de inflorescencias, producción de semillas y porcentaje de llenado de semillas?
-"same shit",
+#"same shit",
 #  7.	Cuál sería el mejor híbrido y cuál sería la localidad más apropiada para la producción de semillas?
-"aca conclu con las dif sig etc no es la combinacion!" # tener en cuenta cuantas de las semillas dieron plantulas?
-)
+#"aca conclu con las dif sig etc no es la combinacion!" # tener en cuenta cuantas de las semillas dieron plantulas?
+
 
 #Macollos
 ggplot(crudos, aes(x = Línea, y = DMT, fill = Localidad)) +
@@ -65,34 +65,86 @@ ggplot(datos_ratio, aes(x = Línea, y = `%MR`, fill = Localidad)) +
        title = "% Macollos reproductivos por Línea y Localidad") +
   theme_bw()
 #####                    MODELOS DMR                                    #######
-## Hay dif sig entre lineas? #sin relastivizar ####
-DMR_Linea <- lmer(DMR ~ Línea + (1|Localidad) + (1|Año), data = crudos) #ziformula porque hay tantos 0 que rompe poisson y nbinom2 porque poisson no se banca el darma
+## Hay dif sig entre lineas?
+# modelo<- lmer(DMR ~ Línea*Localidad*Año + (1|Bloque), data = relativos, weights = varIdent(form = ~1 | Localidad)) #ziformula porque hay tantos 0 que rompe poisson y nbinom2 porque poisson no se banca el darma
+# 
+# library(nlme)
+# DMR <- lme(DMR ~ Línea*Localidad + Año,
+#               random = ~1|Bloque,
+#               weights = varIdent(form = ~1 | Localidad),
+#               data = relativos,
+#               na.action = na.omit) 
+#no cumple supuestos, aun con varident nos da sig el outliers
+
+M_DMRInt <- glmmTMB(
+  DMR ~ Localidad *Línea*Año,
+  family = tweedie(link="log"),
+  data = relativos)
+
+M_DMR <- glmmTMB(
+  DMR ~ Localidad *Línea+Año,
+  family = tweedie(link="log"),
+  data = relativos)
+
+anova(M_DMRInt,M_DMR) # las dif no son significativas me quedo con el modelo sin interaccion
+
+
 #supuestos
-res <- simulateResiduals(DMR_Linea)
+res <- simulateResiduals(M_DMR)
 plot(res)
 testDispersion(res)#  Test de sobredispersión
 testZeroInflation(res)#  Test de cero-inflación (exceso de ceros)
 
-summary(DMR_Linea) 
-anova(DMR_Linea)  #Si
-emm_lineas <- emmeans(DMR_Linea, ~ Línea) #contraste
-pairs(emm_lineas, adjust = "tukey") #J7-L37 y J7-UF93
- #grafiquito
-emm_lineas <- emmeans(DMR_Linea, ~ Línea) # Medias estimadas de DMR por Línea
-cld_lineas <- multcomp::cld(emm_lineas, Letters = letters, adjust = "tukey")
-df_plot <- as.data.frame(cld_lineas)
+#Medias marginales
+emm_loc <- emmeans(M_DMR, ~ Localidad)
+emm_lin <- emmeans(M_DMR, ~ Línea)
+df_loc <- as.data.frame(emm_loc)
+df_lin <- as.data.frame(emm_lin)
 
-ggplot(df_plot, aes(x = Línea, y = emmean, fill = Línea)) + geom_col(color = "black") + geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
-                width = 0.2, size = 0.8) +
-  geom_text(aes(label = .group, y = emmean + 5),   # ajustá el +5 según escala de DMR
-            size = 5) +
+## 4. Graficar Localidad
+ggplot(df_loc, aes(x = Localidad, y = exp(emmean))) +   # exp() porque el link es log
+  geom_col(fill = cols_mod[1], color = "black") +
+  geom_errorbar(aes(ymin = exp(asymp.LCL), ymax = exp(asymp.UCL)),
+                width = 0.2) +
+  labs(y = "DMR (media marginal)", x = "Localidad",
+       title = "Medias marginales estimadas por Localidad") +
+  theme_bw()
+
+## 5. Graficar Línea
+ggplot(df_lin, aes(x = Línea, y = exp(emmean), fill = Línea)) +
+  geom_col(color = "black") +
+  geom_errorbar(aes(ymin = exp(asymp.LCL), ymax = exp(asymp.UCL)),
+                width = 0.2) +
   scale_fill_manual(values = cols_mod) +
-  labs(
-    x = "Línea",
-    y = "Densidad de inflorescencias (DMR, predicho)",
-    title = "Medias estimadas de DMR por línea"
-  ) +
-  theme_minimal(base_size = 13)
+  labs(y = "DMR (media marginal)", x = "Línea",
+       title = "Medias marginales estimadas por Línea") +
+  theme_bw()
+
+
+
+
+
+
+              # summary(M_DMR) 
+              # anova(M_DMR)  #Si
+              # emm_lineas <- emmeans(M_DMR, ~ Línea|Localidad+Año) #contraste
+              # pairs(emm_lineas, adjust = "tukey") #J7-L37 y J7-UF93
+              #  #grafiquito
+              # emm_lineas <- emmeans(M_DMR ~ Línea*Localidad+Año) # Medias estimadas de DMR por Línea
+              # cld_lineas <- multcomp::cld(emm_lineas, Letters = letters, adjust = "tukey")
+              # df_plot <- as.data.frame(cld_lineas)
+              # 
+              # ggplot(df_plot, aes(x = Línea, y = emmean, fill = Línea)) + geom_col(color = "black") + geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+              #                 width = 0.2, size = 0.8) +
+              #   geom_text(aes(label = .group, y = emmean + 5),   # ajustá el +5 según escala de DMR
+              #             size = 5) +
+              #   scale_fill_manual(values = cols_mod) +
+              #   labs(
+              #     x = "Línea",
+              #     y = "Densidad de inflorescencias (DMR, predicho)",
+              #     title = "Medias estimadas de DMR por línea"
+              #   ) +
+              #   theme_minimal(base_size = 13)
 
 ## RELATIVIZADO A CANTIDAD DE PLANTULAS ####
 REL_DMR_Linea <- lmer(DMR ~ Línea + (1|Localidad) + (1|Año), data = relativos) ##Cambiar poner poison!
@@ -132,10 +184,9 @@ ggplot(Rdf_plot, aes(x = Línea, y = emmean, fill = Línea)) + geom_col(color = 
 ## Hay dif entre localidades? # sin relativizar 
 # Modelo con Localidad como VE y Línea/Año como efectos aleatorios
 modelo_loc <- glmmTMB(
-  DMR ~ Localidad+ (1|Línea) + (1|Año),
+  DMR ~ Localidad *Línea + Año,
   family = tweedie(link="log"),
-  data = relativos
-)
+  data = relativos)
 
 res <- simulateResiduals(modelo_loc)
 plot(res)
