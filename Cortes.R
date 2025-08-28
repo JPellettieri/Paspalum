@@ -105,8 +105,8 @@ library(glmmTMB)
 library(splines)
 # M_sinInt2 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 2) + (1|Bloque),
 #                       family = gaussian , data = medidas_repetidas_clean )
-# M_sinInt3 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 3) + (1|Bloque),
-#                       family = gaussian , data = medidas_repetidas_clean )
+M_sinInt3 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 3) + (1|Bloque),
+                      family = gaussian , data = medidas_repetidas_clean )
 # M_sinInt4 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 4) + (1|Bloque),
 #                     family = gaussian , data = medidas_repetidas_clean )
 
@@ -143,9 +143,9 @@ M_conInt3 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea* ns(tiempo, 3) + (1|Bloqu
                       family = Gamma(link = "log"), , data = medidas_repetidas_clean )
 M_sinInt4 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 4) + (1|Bloque),
                       family = Gamma(link = "log"), , data = medidas_repetidas_clean )
-anova(M_sinInt2 , M_sinInt3, M_conInt3 , M_sinInt4)
+anova(M_sinInt2 , M_sinInt3 , M_sinInt4)
 ### Supuestos
-res <- simulateResiduals(fittedModel = M_gamma3, n = 1000) # cumple los supuestos
+res <- simulateResiduals(fittedModel = M_sinInt3, n = 1000) # cumple los supuestos
 plot(res)
 
 
