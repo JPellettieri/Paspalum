@@ -3,6 +3,9 @@
 library(dplyr)
 library(tidyr)
 library(ggplot2)
+library(lme4)
+library(lmerTest)  # para p-valores
+library(nlme
 
 cols <- paletteer_d("ggthemes::excel_Depth")
 cols_mod <- cols
@@ -63,12 +66,12 @@ ggplot(resumen, aes(x = tiempo, y = media, color = Línea, group = Línea)) +
 #### Modelo ###
 library(lme4)
 library(lmerTest)  # para p-valores
+library(nlme)
 
 # Supongamos que PF.d es la variable respuesta,
 # Localidad es efecto fijo,
 # Línea y Bloque son efectos aleatorios (anidados)
 # Corte sería la medida repetida (tiempo)
-
 M_PDias <- glmer((PF.d/PL_m) ~ Localidad*Línea*tiempo + (1|Bloque),family=gaussian , data = medidas_repetidas)
 
 summary(M_PDias)
@@ -78,7 +81,25 @@ res <- simulateResiduals(M_PDias, n = 1000)
 plot(res)
 testResiduals(res)
 testDispersion(res)
+# No se cumplen los supuestos modelo varinza
+# Modelo con varianza diferente por localidad
 
+medidas_repetidas_clean <- na.omit(medidas_repetidas[, c("PF.d", "PL_m", "Localidad", "Línea", "tiempo", "Bloque")])
+M_PDias <- lme(
+  fixed = (PF.d/PL_m) ~ Localidad * Línea * tiempo,
+  random = ~1 | Bloque,
+  weights = varIdent(form = ~1 | Localidad),
+  data = medidas_repetidas_clean
+)
+
+#Chequeo supuestos 
+plot(M_PDias)     # residuos vs ajustados
+qqnorm(resid(M_PDias))
+qqline(resid(M_PDias))
+library(performance)
+check_model(M_PDias) # mejora bastante obvio el VIF es enorme pero no importa es por la interaccion, Tambien da sospecha de que quiza el efecto del tiempo hay transformarlo no sirve la lineal.
+
+medidas_repetidas$Bloque
 summary(M_PDias )
 anova(M_PDias)
 
