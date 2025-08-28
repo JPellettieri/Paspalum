@@ -103,19 +103,19 @@ anova(M_PDias)
 #EL TIEMPO NO TIENE UNA RELACION LINEAL OBVIAMENTE-> planteo spline natural
 library(glmmTMB)
 library(splines)
-M_sinInt2 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 2) + (1|Bloque),
-                      family = gaussian , data = medidas_repetidas_clean )
-M_sinInt3 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 3) + (1|Bloque),
-                      family = gaussian , data = medidas_repetidas_clean )
-M_sinInt4 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 4) + (1|Bloque),
-                    family = gaussian , data = medidas_repetidas_clean )
+# M_sinInt2 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 2) + (1|Bloque),
+#                       family = gaussian , data = medidas_repetidas_clean )
+# M_sinInt3 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 3) + (1|Bloque),
+#                       family = gaussian , data = medidas_repetidas_clean )
+# M_sinInt4 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 4) + (1|Bloque),
+#                     family = gaussian , data = medidas_repetidas_clean )
 
 #M_conInt <- glmmTMB((PF.d/PL_m) ~ Localidad * Línea * ns(tiempo, 3) + (1|Bloque),
 #                    family = gaussian, data = medidas_repetidas_clean) #demasiados parámetros para la info disponible. no converge
 #anova(M_sinInt, M_conInt)  # LRT
 
-anova(M_sinInt2 , M_sinInt3 , M_sinInt4) # spline 4 complejiza y no agrega nada al analisis, 3 es significativamnete mejor que 2 
-car::Anova(M_sinInt3)
+# anova(M_sinInt2 , M_sinInt3 , M_sinInt4) # spline 4 complejiza y no agrega nada al analisis, 3 es significativamnete mejor que 2 
+# car::Anova(M_sinInt3)
 
 ### Supuestos
 res <- simulateResiduals(fittedModel = M_sinInt3, n = 1000)
@@ -129,15 +129,26 @@ M_sinInt3_varident <- glmmTMB(
 )
 res <- simulateResiduals(fittedModel = M_sinInt3_varident, n = 1000)
 #no alcanza cambio a distribucion gamma
-M_sinInt3_gamma <- glmmTMB(
+M_gamma3 <- glmmTMB(
   (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 3) + (1|Bloque),
-  #dispformula = ~ Localidad,
   family = Gamma(link = "log"),
   data = medidas_repetidas_clean
 )
+
+M_sinInt2 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 2) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+M_sinInt3 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 3) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+M_conInt3 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea* ns(tiempo, 3) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+M_sinInt4 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 4) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+anova(M_sinInt2 , M_sinInt3, M_conInt3 , M_sinInt4)
 ### Supuestos
-res <- simulateResiduals(fittedModel = M_sinInt3_gamma, n = 1000)
+res <- simulateResiduals(fittedModel = M_gamma3, n = 1000) # cumple los supuestos
 plot(res)
+
+
 
 ###################################################################
 ##########################    Producion Total      ###########################################
