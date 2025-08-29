@@ -186,6 +186,20 @@ ggplot(cld_resp, aes(x = Localidad, y = response, color = Línea)) +
        x = "Línea",
        title = "Estimated marginal means (Gamma GLMM) with group letters") +
   theme_minimal(base_size = 14)
+
+
+###Dinámica temporal de medias marginales
+library(ggeffects)
+pred <- ggpredict(M_sinInt3, terms = c("tiempo [all]", "Localidad", "Línea"))
+
+
+ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, color = NA) +
+  labs(x = "Tiempo", y = "Producción relativa (predicha)",
+       color = "Localidad × Línea", fill = "Localidad × Línea") +
+  theme_minimal(base_size = 14)
+
 ###################################################################
 ##########################    Producion Total      ###########################################
 #####################################################################
@@ -195,7 +209,9 @@ ggplot(cld_resp, aes(x = Localidad, y = response, color = Línea)) +
 ###### Hago lo q nos dijo Adriana ####
 crudos$`PF Total`
 M_PFTotal <- lmer(`PF Total`~ Localidad*Línea + (1|Bloque) + Año , data = relativos)
+InteracM_PFTotal <- lmer(`PF Total`~ Localidad*Línea*Año + (1|Bloque) , data = relativos)
 
+anova(M_PFTotal,InteracM_PFTotal)
 #supestos
 res <- simulateResiduals(M_PFTotal, n = 1000)
 plot(res)
@@ -211,7 +227,7 @@ emm_loc <- emmeans(M_PFTotal, ~ Localidad)
 emm_loc
 
 # Comparaciones post hoc con letras
-pairs(emmeans(M_PFTotal, ~Línea|Localidad), adjust = "tukey")
+pairs(emmeans(M_PFTotal, ~Localidad), adjust = "tukey")
 cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "tukey")
 df_plot_loc <- as.data.frame(cld_loc)
 
@@ -221,13 +237,12 @@ cols_mod <- cols
 cols_mod[2] <- cols[6]   # opcional, para personalizar como en tu ejemplo
 
 # Gráfico para Localidad
-ggplot(df_plot_loc, aes(x = Localidad, y = emmean, fill = Localidad)) +
-  geom_col(color = "black") +
+ggplot(df_plot_loc, aes(x = Localidad, y = emmean)) +
+  geom_col(color = "black", fill = "darkgreen") +
   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
                 width = 0.2, size = 0.8) +
-  geom_text(aes(label = .group, y = emmean + 30),   # ajustá el +30 según escala de PF Total
-            size = 5) +
-  scale_fill_manual(values = cols_mod) +
+  geom_text(aes(label = .group, y = emmean + 3),   # ajustá el +30 según escala de PF Total
+            size = 5)  +
   labs(
     x = "Localidad",
     y = "PF Total (media marginal)",
