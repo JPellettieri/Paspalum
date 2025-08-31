@@ -217,70 +217,170 @@ res <- simulateResiduals(M_PFTotal, n = 1000)
 plot(res)
 testResiduals(res)
 testDispersion(res)
-
 summary(M_PFTotal )
 anova(M_PFTotal )
 
+#NO ES HOMOGENEA LA VARIANZA
+library(nlme)
+relativos <- relativos %>%
+  dplyr::rename(PF_Total = `PF Total`)
+M_PFTotal_varIdent <- lme(
+  PF_Total ~ Localidad * Línea + Año,
+  random = ~ 1 | Bloque,
+  weights = varIdent(form = ~ 1 | Localidad*Línea),
+  data = relativos
+)
+#CHEQUEO QUE LA NORMALIDAD SIGA BIEN
+res <- residuals(M_PFTotal_varIdent, type = "normalized")
+
+# Shapiro-Wilk test
+shapiro.test(res)
+
+# QQplot
+qqnorm(res)
+qqline(res, col = "red", lwd = 2)
+#MURIÓ LA NORMALIDAD!!! VAMOS A TENER QUE PROBAR CON OTRO MODELO
+# Pruebo con Gamma
+M_gamma <- glmer(PF_Total ~ Localidad * Línea + Año + (1|Bloque),
+                 family = Gamma(link = "log"),
+                 data = relativos)
+
+res <- simulateResiduals(M_gamma, n = 1000)
+plot(res)
+testResiduals(res)
+testDispersion(res)
+
+summary(M_gamma)
+car::Anova(M_gamma, type =2)
+
 
 # Medias estimadas para Localidad
-emm_loc <- emmeans(M_PFTotal, ~ Localidad)
+#LO CAMBIË PARA QUE USE EL MODELO GAMMA
+emm_loc <- emmeans(M_gamma, ~ Localidad |Línea)
 emm_loc
 
 # Comparaciones post hoc con letras
-pairs(emmeans(M_PFTotal, ~Localidad), adjust = "tukey")
-cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "tukey")
-df_plot_loc <- as.data.frame(cld_loc)
+pairs(emmeans(M_gamma, ~Localidad|Línea), adjust = "sidak")
+cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "sidak")
 
 # Paleta de colores
 cols <- paletteer::paletteer_d("ggthemes::excel_Depth")
 cols_mod <- cols
 cols_mod[2] <- cols[6]   # opcional, para personalizar como en tu ejemplo
 
+emm_df <- as.data.frame(emm_loc)
+cld_df <- data.frame(
+  Localidad = cld_loc$Localidad,
+  Línea = cld_loc$Línea,
+  label = cld_loc$.group
+)
+cld_df
+emm_df
 # Gráfico para Localidad
-ggplot(df_plot_loc, aes(x = Localidad, y = emmean)) +
-  geom_col(color = "black", fill = "darkgreen") +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
-                width = 0.2, size = 0.8) +
-  geom_text(aes(label = .group, y = emmean + 3),   # ajustá el +30 según escala de PF Total
-            size = 5)  +
+ggplot(emm_df, aes(x = Localidad, y = emmean, fill = Línea)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+                width = 0.2, position = position_dodge(0.9)) +
+  geom_text(data = cld_df,
+            aes(x = Localidad, y = max(emm_df$emmean) + 0.05, label = label),
+            inherit.aes = FALSE,
+            position = position_dodge(0.9)) +
+  facet_wrap(~Línea) +
+  scale_fill_manual(values = cols_mod) +
+  theme_minimal(base_size = 14) +
   labs(
+    y = "PF Total (estimado)",
     x = "Localidad",
-    y = "PF Total (media marginal)",
-    title = "Medias estimadas de PF Total por localidad"
-  ) +
-  theme_minimal(base_size = 14)
+    fill = "Línea",
+    title = "Efectos marginales de Localidad por Línea",
+    subtitle = "Letras indican diferencias significativas (Sidak)"
+  )
+# ggplot(df_plot_loc, aes(x = Localidad, y = emmean)) +
+#   geom_col(color = "black", fill = "darkgreen") +
+#   geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+#                 width = 0.2, size = 0.8) +
+#   geom_text(aes(label = .group, y = emmean + 3),   # ajustá el +30 según escala de PF Total
+#             size = 5)  +
+#   labs(
+#     x = "Localidad",
+#     y = "PF Total (media marginal)",
+#     title = "Medias estimadas de PF Total por localidad"
+#   ) +
+#   theme_minimal(base_size = 14)
 
 
 # ---- Si querés hacer lo mismo por LÍNEA ----
-emm_lin <- emmeans(M_PFTotal, ~ Línea)
-cld_lin <- multcomp::cld(emm_lin, Letters = letters, adjust = "tukey")
-df_plot_lin <- as.data.frame(cld_lin)
+# Medias estimadas para Localidad
+#LO CAMBIË PARA QUE USE EL MODELO GAMMA
+emm_lin <- emmeans(M_gamma, ~ Línea |Localidad)
+emm_lin
 
-ggplot(df_plot_lin, aes(x = Línea, y = emmean, fill = Línea)) +
-  geom_col(color = "black") +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
-                width = 0.2, size = 0.8) +
-  geom_text(aes(label = .group, y = emmean + 30),   # ajustá el +30 según escala de PF Total
-            size = 5) +
+# Comparaciones post hoc con letras
+pairs(emmeans(M_gamma, ~ Línea |Localidad), adjust = "sidak")
+cld_lin <- multcomp::cld(emm_lin, Letters = letters, adjust = "sidak")
+
+# Paleta de colores
+cols <- paletteer::paletteer_d("ggthemes::excel_Depth")
+cols_mod <- cols
+cols_mod[2] <- cols[6]   # opcional, para personalizar como en tu ejemplo
+
+emm_df <- as.data.frame(emm_lin)
+cld_df <- data.frame(
+  Localidad = cld_lin$Localidad,
+  Línea = cld_lin$Línea,
+  label = cld_lin$.group
+)
+cld_df
+emm_df
+# Gráfico para Localidad
+ggplot(emm_df, aes(x = Línea, y = emmean, fill = Localidad)) +
+  geom_bar(stat = "identity", position = position_dodge()) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+                width = 0.2, position = position_dodge(0.9)) +
+  geom_text(data = cld_df,
+            aes(x = Línea, y = max(emm_df$emmean) + 0.05, label = label),
+            inherit.aes = FALSE,
+            position = position_dodge(0.9)) +
+  facet_wrap(~Localidad) +
   scale_fill_manual(values = cols_mod) +
+  theme_minimal(base_size = 14) +
   labs(
+    y = "PF Total (estimado)",
     x = "Línea",
-    y = "PF Total (media marginal)",
-    title = "Medias estimadas de PF Total por línea"
-  ) +
-  theme_minimal(base_size = 14)
+    fill = "Localidad",
+    title = "Efectos marginales de Línea por Localidad",
+    subtitle = "Letras indican diferencias significativas (Sidak)"
+  )
 
-######## Linea*Localidad ###
+# emm_lin <- emmeans(M_PFTotal, ~ Línea)
+# cld_lin <- multcomp::cld(emm_lin, Letters = letters, adjust = "tukey")
+# df_plot_lin <- as.data.frame(cld_lin)
+# 
+# ggplot(df_plot_lin, aes(x = Línea, y = emmean, fill = Línea)) +
+#   geom_col(color = "black") +
+#   geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+#                 width = 0.2, size = 0.8) +
+#   geom_text(aes(label = .group, y = emmean + 30),   # ajustá el +30 según escala de PF Total
+#             size = 5) +
+#   scale_fill_manual(values = cols_mod) +
+#   labs(
+#     x = "Línea",
+#     y = "PF Total (media marginal)",
+#     title = "Medias estimadas de PF Total por línea"
+#   ) +
+#   theme_minimal(base_size = 14)
+# 
+# ######## Linea*Localidad ###
 
 # Estimación de medias marginales
-emm <- emmeans(M_PFTotal, ~ Localidad*Línea)
+emm <- emmeans(M_gamma, ~ Localidad*Línea)
 
-# Comparaciones múltiples de Tukey
-pairs_emm <- contrast(emm, method = "pairwise", adjust = "tukey")
+# ComparacionesM_gamma# Comparaciones múltiples de Tukey
+pairs_emm <- contrast(emm, method = "pairwise", adjust = "sidak")
 pairs_emm
 
 # Grupos de Tukey (letras)
-cld_emm <- multcomp::cld(emm, adjust = "tukey", Letters = letters, alpha = 0.05)
+cld_emm <- multcomp::cld(emm, adjust = "sidak", Letters = letters, alpha = 0.05)
 cld_emm
 
 # Gráfico
