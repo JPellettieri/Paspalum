@@ -296,9 +296,9 @@ cols_mod <- cols
 cols_mod[2] <- cols[6]
 
 # Gráfico
-ggplot(df_plot_loc, aes(x = Localidad, y = emmean, fill = Localidad)) +
+ggplot(df_plot_loc, aes(x = Localidad, y = exp(emmean), fill = Localidad)) +
   geom_col(color = "black") +
-  geom_errorbar(aes(ymin =asymp.LCL, ymax = asymp.UCL),
+  geom_errorbar(aes(ymin =exp(asymp.LCL), ymax = exp(asymp.UCL)),
                 width = 0.2, size = 0.8) +
   geom_text(aes(label = .group, y = emmean + 5),   # ajustá el +5 según escala de DMR
             size = 5) +
