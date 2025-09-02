@@ -147,7 +147,7 @@ ggplot(df_lin, aes(x = Línea, y = exp(emmean), fill = Línea)) +
               #   theme_minimal(base_size = 13)
 
 ## RELATIVIZADO A CANTIDAD DE PLANTULAS ####
-REL_DMR_Linea <- lmer(DMR ~ Línea + (1|Localidad) + (1|Año), data = relativos) ##Cambiar poner poison!
+REL_DMR_Linea <- lmer(DMR ~ Línea *Localidad + Año+(1|Bloque), data = relativos) ##Cambiar poner poison!
 summary(REL_DMR_Linea) 
 anova(REL_DMR_Linea)  #Si
 Remm_lineas <- emmeans(REL_DMR_Linea, ~ Línea) #contraste
@@ -184,7 +184,7 @@ ggplot(Rdf_plot, aes(x = Línea, y = emmean, fill = Línea)) + geom_col(color = 
 ## Hay dif entre localidades? # sin relativizar 
 # Modelo con Localidad como VE y Línea/Año como efectos aleatorios
 modelo_loc <- glmmTMB(
-  DMR ~ Localidad *Línea + Año,
+  DMR ~ Localidad *Línea + Año +(1|Bloque),
   family = tweedie(link="log"),
   data = relativos)
 
@@ -203,6 +203,7 @@ emm_loc <- emmeans(modelo_loc, ~ Localidad, type = "response")
 emm_loc
 # Obtenemos los intervalos de confianza
 df_plot_loc <- as.data.frame(emm_loc)
+str(df_plot_loc)
 df_plot_loc$.group <- cld_loc$.group  # agregamos las letras
 
 # Paleta de colores
@@ -225,7 +226,33 @@ ggplot(df_plot_loc, aes(x = Localidad, y = response , fill = Localidad)) +
   ) +
   theme_minimal()
 
+#Por Línea
+emm_loc <- emmeans(modelo_loc, ~ Línea, type = "response") 
+emm_loc
+# Obtenemos los intervalos de confianza
+df_plot_loc <- as.data.frame(emm_loc)
+str(df_plot_loc)
+df_plot_loc$.group <- cld_loc$.group  # agregamos las letras
 
+# Paleta de colores
+cols <- paletteer_d("ggthemes::excel_Depth")
+cols_mod <- cols
+cols_mod[2] <- cols[6]
+
+# Gráfico
+ggplot(df_plot_loc, aes(x = Línea, y = response , fill = Línea)) +
+  geom_col(color = "black") +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+                width = 0.2, size = 0.8) +
+  geom_text(aes(label = .group, y = response  + 2), size = 5) +  # ajusté +2 para que las letras queden dentro del eje
+  scale_fill_manual(values = cols_mod) +
+  scale_y_continuous(limits = c(0, 1)) +  # ajusta según rango real
+  labs(
+    x = "Línea",
+    y = "Densidad de inflorescencias (DMR, predicho)",
+    title = "Medias estimadas de DMR por localidad"
+  ) +
+  theme_minimal()
 
 #### Interaccion genotipo ambiente #### 
 # Modelo con Localidad como VE y Línea/Año como efectos aleatorios
@@ -238,7 +265,7 @@ ggplot(df_plot_loc, aes(x = Localidad, y = response , fill = Localidad)) +
 
 library(glmmTMB)
 modelo_GEI <- glmmTMB(
-  DMR ~ Localidad*Línea + (1|Año),
+  DMR ~ Localidad*Línea +Año +(1|Bloque),
   family = tweedie(link="log"),
   data = relativos
 )
@@ -257,12 +284,12 @@ summary(modelo_GEI)
 anova(modelo_GEI)  #Si
 emm_lineas <- emmeans(modelo_GEI, ~ Línea) #contraste
 pairs(emm_lineas, adjust = "tukey") #J7-L37 y J7-UF93
-emm_localidad <- emmeans(modelo_GEI, ~ Localidad)
-pairs(emm_localidad, adjust = "tukey")
+emm_loc <- emmeans(modelo_GEI, ~ Localidad)
+pairs(emm_loc, adjust = "tukey")
 # Comparaciones post hoc con letras
 cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "tukey")
 df_plot_loc <- as.data.frame(cld_loc)
-
+df_plot_loc
 # Paleta de colores
 cols <- paletteer_d("ggthemes::excel_Depth")
 cols_mod <- cols
@@ -271,7 +298,7 @@ cols_mod[2] <- cols[6]
 # Gráfico
 ggplot(df_plot_loc, aes(x = Localidad, y = emmean, fill = Localidad)) +
   geom_col(color = "black") +
-  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+  geom_errorbar(aes(ymin =asymp.LCL, ymax = asymp.UCL),
                 width = 0.2, size = 0.8) +
   geom_text(aes(label = .group, y = emmean + 5),   # ajustá el +5 según escala de DMR
             size = 5) +
