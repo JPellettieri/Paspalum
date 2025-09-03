@@ -143,12 +143,14 @@ M_conInt3 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea* ns(tiempo, 3) + (1|Bloqu
                       family = Gamma(link = "log"), , data = medidas_repetidas_clean )
 M_sinInt4 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea + ns(tiempo, 4) + (1|Bloque),
                       family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+M_conInt4 <- glmmTMB( (PF.d/PL_m) ~ Localidad * Línea* ns(tiempo, 4) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
 anova(M_sinInt2 , M_sinInt3 , M_sinInt4)
-### Supuestos
-res <- simulateResiduals(fittedModel = M_sinInt3, n = 1000) # cumple los supuestos
+### Supuestos #nos quedamos con conInt4 para que haya cohesion entre modelos
+res <- simulateResiduals(fittedModel = M_conInt4, n = 1000) # cumple los supuestos
 plot(res)
 
-emm_loc_lin <- emmeans(M_sinInt3, ~ Línea |Localidad)
+emm_loc_lin <- emmeans(M_conInt4, ~ Línea |Localidad)
 
 emm_loc_lin_resp <- summary(emm_loc_lin, type = "response")
 emm_loc_lin_resp
@@ -189,7 +191,7 @@ ggplot(cld_resp, aes(x = Localidad, y = response, color = Línea)) +
 
 
 
-emm_loc_lin <- emmeans(M_sinInt3, ~ Localidad |Línea)
+emm_loc_lin <- emmeans(M_conInt4, ~ Localidad |Línea)
 
 emm_loc_lin_resp <- summary(emm_loc_lin, type = "response")
 emm_loc_lin_resp
@@ -230,35 +232,38 @@ ggplot(cld_resp, aes(x = Línea, y = response, color = Localidad)) +
 ###Dinámica temporal de medias marginales
 library(ggeffects)
 #POR LÍNEA 
-pred <- ggpredict(M_sinInt3, terms = c("tiempo [all]", "Línea"))
+pred <- ggpredict(M_conInt4, terms = c("tiempo [all]", "Línea"))
 
 
 ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
   geom_line(size = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, color = NA) +
-  labs(x = "Tiempo", y = "Producción relativa (predicha)",
+  labs(x = "Tiempo", y = "Producción relativa (predicha) por día",
        color = " Línea", fill = " Línea") +
   theme_minimal(base_size = 14)
 #POR Localidad
-pred <- ggpredict(M_sinInt3, terms = c("tiempo [all]", "Localidad"))
+pred <- ggpredict(M_conInt4, terms = c("tiempo [all]", "Localidad"))
 
 
 ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
   geom_line(size = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, color = NA) +
-  labs(x = "Tiempo", y = "Producción relativa (predicha)",
+  labs(x = "Tiempo", y = "Producción relativa (predicha) por día",
        color = " Localidad", fill = " Localidad") +
   theme_minimal(base_size = 14)
 
 #USAR ESTO COMO TEMPLATE PARA EL DE MEDIAS MARGINALES
 #Medias marginales
-emm_loc <- emmeans(M_sinInt3, ~ Localidad)
-emm_lin <- emmeans(M_sinInt3, ~ Línea)
+emm_loc <- emmeans(M_conInt4, ~ Localidad)
+emm_lin <- emmeans(M_conInt4, ~ Línea)
+pairs_emm <- contrast(emm_loc, method = "pairwise", adjust = "sidak")
+pairs_emm
 cld_loc <- cld(emm_loc, Letters = letters)
 df_loc <- as.data.frame(cld_loc)
 
 # Letras para Línea
 cld_lin <- cld(emm_lin, Letters = letters)
+cld_lin
 df_lin <- as.data.frame(cld_lin)
 str(cld_lin)
 
@@ -300,15 +305,17 @@ M_sinInt2 <- glmmTMB( (PF.ºC/PL_m) ~ Localidad * Línea + ns(tiempo, 2) + (1|Bl
 M_sinInt3 <- glmmTMB( (PF.ºC/PL_m) ~ Localidad * Línea + ns(tiempo, 3) + (1|Bloque),
                       family = Gamma(link = "log"), , data = medidas_repetidas_clean )
 M_conInt3 <- glmmTMB( (PF.ºC/PL_m) ~ Localidad * Línea* ns(tiempo, 3) + (1|Bloque),
-                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+                     family = Gamma(link = "log"), , data = medidas_repetidas_clean )
 M_sinInt4 <- glmmTMB( (PF.ºC/PL_m) ~ Localidad * Línea + ns(tiempo, 4) + (1|Bloque),
                       family = Gamma(link = "log"), , data = medidas_repetidas_clean )
-anova(M_sinInt2 , M_sinInt3 , M_sinInt4)
+M_conInt4 <- glmmTMB( (PF.ºC/PL_m) ~ Localidad * Línea* ns(tiempo, 4) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+anova(M_sinInt2 , M_sinInt3 , M_sinInt4) #Me quedo con el modelo conInt4
 ### Supuestos
-res <- simulateResiduals(fittedModel = M_grados, n = 1000) # cumple los supuestos
+res <- simulateResiduals(fittedModel = M_conInt4, n = 1000) # cumple los supuestos
 plot(res)
 
-emm_loc_lin <- emmeans(M_grados, ~ Línea |Localidad)
+emm_loc_lin <- emmeans(M_conInt4, ~ Línea |Localidad)
 
 emm_loc_lin_resp <- summary(emm_loc_lin, type = "response")
 emm_loc_lin_resp
@@ -349,7 +356,7 @@ ggplot(cld_resp, aes(x = Localidad, y = response, color = Línea)) +
 
 
 
-emm_loc_lin <- emmeans(M_grados, ~ Localidad |Línea)
+emm_loc_lin <- emmeans(M_conInt4, ~ Localidad |Línea)
 
 emm_loc_lin_resp <- summary(emm_loc_lin, type = "response")
 emm_loc_lin_resp
@@ -390,30 +397,30 @@ ggplot(cld_resp, aes(x = Línea, y = response, color = Localidad)) +
 ###Dinámica temporal de medias marginales
 library(ggeffects)
 #POR LÍNEA 
-pred <- ggpredict(M_grados, terms = c("tiempo [all]", "Línea"))
+pred <- ggpredict(M_conInt4, terms = c("tiempo [all]", "Línea"))
 
 
 ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
   geom_line(size = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, color = NA) +
-  labs(x = "Tiempo", y = "Producción relativa (predicha)",
+  labs(x = "Tiempo", y = "Producción relativa (predicha) por grado",
        color = " Línea", fill = " Línea") +
   theme_minimal(base_size = 14)
 #POR Localidad
-pred <- ggpredict(M_grados, terms = c("tiempo [all]", "Localidad"))
+pred <- ggpredict(M_conInt4, terms = c("tiempo [all]", "Localidad"))
 
 
 ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
   geom_line(size = 1) +
   geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, color = NA) +
-  labs(x = "Tiempo", y = "Producción relativa (predicha)",
+  labs(x = "Tiempo", y = "Producción relativa (predicha) por grado",
        color = " Localidad", fill = " Localidad") +
   theme_minimal(base_size = 14)
 
 #USAR ESTO COMO TEMPLATE PARA EL DE MEDIAS MARGINALES
 #Medias marginales
-emm_loc <- emmeans(M_grados, ~ Localidad)
-emm_lin <- emmeans(M_grados, ~ Línea)
+emm_loc <- emmeans(M_conInt4, ~ Localidad)
+emm_lin <- emmeans(M_conInt4, ~ Línea)
 cld_loc <- cld(emm_loc, Letters = letters)
 df_loc <- as.data.frame(cld_loc)
 
@@ -444,14 +451,160 @@ ggplot(df_lin, aes(x = Línea, y = exp(emmean), fill = Línea)) +
 
 ####POR MM####
 
-M_lluvia <-  glmmTMB(
-  (PF.mm/PL_m) ~ Localidad * Línea + ns(tiempo, 3) + (1|Bloque),
-  family = Gamma(link = "log"),
-  data = medidas_repetidas_clean
-)
-
-res <- simulateResiduals(fittedModel = M_lluvia, n = 1000) # cumple los supuestos
+M_sinInt2 <- glmmTMB( (PF.mm/PL_m) ~ Localidad * Línea + ns(tiempo, 2) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+M_sinInt3 <- glmmTMB( (PF.mm/PL_m) ~ Localidad * Línea + ns(tiempo, 3) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+M_conInt3 <- glmmTMB( (PF.mm/PL_m) ~ Localidad * Línea* ns(tiempo, 3) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+M_sinInt4 <- glmmTMB( (PF.mm/PL_m) ~ Localidad * Línea + ns(tiempo, 4) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+M_conInt4 <- glmmTMB( (PF.mm/PL_m) ~ Localidad * Línea* ns(tiempo, 4) + (1|Bloque),
+                      family = Gamma(link = "log"), , data = medidas_repetidas_clean )
+anova(M_sinInt2 , M_sinInt3 , M_sinInt4) #de nuevo con el sinInt4 MENTIRA NO DAN LOS SUPUESTOS
+anova(M_sinInt4, M_conInt4)
+res <- simulateResiduals(fittedModel = M_conInt4, n = 1000) # cumple los supuestos el conINT4
 plot(res)
+
+emm_loc_lin <- emmeans(M_conInt4, ~ Línea |Localidad)
+
+emm_loc_lin_resp <- summary(emm_loc_lin, type = "response")
+emm_loc_lin_resp
+
+pairs_all <- pairs(emm_loc_lin)
+summary(pairs_all)
+
+pairs_all <- pairs(emm_loc_lin)
+summary(pairs_all, infer = TRUE)
+library(multcomp)
+cld_link <- cld(emm_loc_lin, Letters = letters, type = "link")
+cld_link
+
+cld_link_df <- as.data.frame(cld_link)
+
+# Convert emm_resp to a plain data.frame
+emm_resp_df <- as.data.frame(emm_resp)
+
+# Now join by the factor columns
+cld_resp <- left_join(emm_resp_df,
+                      cld_link_df[, c("Localidad", "Línea", ".group")],
+                      by = c("Localidad", "Línea"))
+
+cld_resp
+
+ggplot(cld_resp, aes(x = Localidad, y = response, color = Línea)) +
+  geom_point(position = position_dodge(width = 0.6), size = 3) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+                width = 0.2, position = position_dodge(width = 0.6)) +
+  geom_text(aes(label = .group),
+            position = position_dodge(width = 0.6),
+            vjust = -0.8, size = 5) +
+  scale_color_manual(values = cols_mod) + 
+  labs(y = "Estimated mean PFºC / PL_m",
+       x = "Localidad",
+       title = "Estimated marginal means (Gamma GLMM) with group letters") +
+  theme_minimal(base_size = 14)
+
+
+
+emm_loc_lin <- emmeans(M_conInt4, ~ Localidad |Línea)
+
+emm_loc_lin_resp <- summary(emm_loc_lin, type = "response")
+emm_loc_lin_resp
+
+pairs_all <- pairs(emm_loc_lin)
+summary(pairs_all)
+
+pairs_all <- pairs(emm_loc_lin)
+summary(pairs_all, infer = TRUE)
+library(multcomp)
+cld_link <- cld(emm_loc_lin, Letters = letters, type = "link")
+cld_link
+
+cld_link_df <- as.data.frame(cld_link)
+
+# Convert emm_resp to a plain data.frame
+emm_resp_df <- as.data.frame(emm_resp)
+
+# Now join by the factor columns
+cld_resp <- left_join(emm_resp_df,
+                      cld_link_df[, c("Localidad", "Línea", ".group")],
+                      by = c("Localidad", "Línea"))
+
+cld_resp
+
+ggplot(cld_resp, aes(x = Línea, y = response, color = Localidad)) +
+  geom_point(position = position_dodge(width = 0.6), size = 3) +
+  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+                width = 0.2, position = position_dodge(width = 0.6)) +
+  geom_text(aes(label = .group),
+            position = position_dodge(width = 0.6),
+            vjust = -0.8, size = 5) +
+  scale_color_manual(values = cols_mod) + 
+  labs(y = "Estimated mean PFºC / PL_m",
+       x = "Línea",
+       title = "Estimated marginal means (Gamma GLMM) with group letters") +
+  theme_minimal(base_size = 14)
+###Dinámica temporal de medias marginales
+library(ggeffects)
+#POR LÍNEA 
+pred <- ggpredict(M_conInt4, terms = c("tiempo [all]", "Línea"))
+
+
+ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, color = NA) +
+  labs(x = "Tiempo", y = "Producción relativa (predicha) por mm",
+       color = " Línea", fill = " Línea") +
+  theme_minimal(base_size = 14)
+#POR Localidad
+pred <- ggpredict(M_conInt4, terms = c("tiempo [all]", "Localidad"))
+
+
+ggplot(pred, aes(x = x, y = predicted, color = group, fill = group)) +
+  geom_line(size = 1) +
+  geom_ribbon(aes(ymin = conf.low, ymax = conf.high), alpha = 0.2, color = NA) +
+  labs(x = "Tiempo", y = "Producción relativa (predicha) por mm",
+       color = " Localidad", fill = " Localidad") +
+  theme_minimal(base_size = 14)
+
+#USAR ESTO COMO TEMPLATE PARA EL DE MEDIAS MARGINALES
+#Medias marginales
+emm_loc <- emmeans(M_conInt4, ~ Localidad)
+emm_lin <- emmeans(M_conInt4, ~ Línea)
+cld_loc <- cld(emm_loc, Letters = letters)
+df_loc <- as.data.frame(cld_loc)
+emm_CC <- emmeans(M_conInt4, ~ Línea| Localidad)
+pairs_emm <- contrast(emm_CC, method = "pairwise", adjust = "tukey")
+pairs_emm
+cld_CC <- cld(emm_CC, Letters = letters)
+cld_CC
+df_CC <- as.data.frame(cld_CC)
+# Letras para Línea
+cld_lin <- cld(emm_lin, Letters = letters)
+df_lin <- as.data.frame(cld_lin)
+str(cld_lin)
+
+## 4. Graficar Localidad
+ggplot(df_loc, aes(x = Localidad, y = exp(emmean))) +
+  geom_col(fill = cols_mod[1], color = "black") +
+  geom_errorbar(aes(ymin = exp(asymp.LCL), ymax = exp(asymp.UCL),
+                    width = 0.2)) +
+  geom_text(aes(label = .group), vjust = -0.8, size = 5) +   # letras arriba
+  labs(y = "Estimated mean PFmm / PL_", x = "Localidad",
+       title = "Medias marginales estimadas por Localidad") +
+  theme_bw()
+## 5. Graficar Línea
+ggplot(df_lin, aes(x = Línea, y = exp(emmean), fill = Línea)) +
+  geom_col(color = "black") +
+  geom_errorbar(aes(ymin = exp(asymp.LCL), ymax = exp(asymp.UCL)),
+                width = 0.2) +
+  scale_fill_manual(values = cols_mod) +
+  geom_text(aes(label = .group), vjust = -0.8, size = 5) +
+  labs(y = "Estimated mean PFmm / PL_", x = "Línea",
+       title = "Medias marginales estimadas por Línea") +
+  theme_bw()
+
 ###################################################################
 ##########################    Producion Total      ###########################################
 #####################################################################
