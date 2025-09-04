@@ -253,18 +253,23 @@ ggplot(df_plot_loc, aes(x = Línea, y = response , fill = Línea)) +
     title = "Medias estimadas de DMR por localidad"
   ) +
   theme_minimal()
-#HAGO SEMILLAS LLENAS#####
+#HAGO SEMILLAS #####
 head(relativos)
-relativos_clean<-na.omit(relativos[, c("Prod. S. llenas", "Localidad","Año" ,"Línea", "Bloque")])
+relativos_clean<-na.omit(crudos[, c("Prod. Sem", "Localidad","Año" ,"Línea", "Bloque", "Pl/m")])
+relativos_clean$Prod_Sem_rel <- relativos_clean$`Prod. Sem`/ relativos_clean$`Pl/m`
+str(relativos_clean)
+relativos_clean$Localidad <- as.factor(relativos_clean$Localidad)
+relativos_clean$Línea <- as.factor(relativos_clean$Línea)
+relativos_clean$Año <- as.factor(relativos_clean$Año)
+relativos_clean$Bloque <- as.factor(relativos_clean$Bloque)
+
+
 modelo_loc <- glmmTMB(
-  `Prod. S. llenas`~ Localidad *Línea + Año +(1|Bloque),
-  family = tweedie(link="log"),
-  data = relativos_clean)
-modelo_loc <- glmmTMB(
-  `Prod. S. llenas`~ Localidad *Línea + Año +(1|Bloque),
+  Prod_Sem_rel~ Localidad *Línea + Año +(1|Bloque),
   family = gaussian,
-  dispformula = ~ Línea,
+  dispformula = ~ Línea*Año,
   data = relativos_clean)
+
 
 
 res <- simulateResiduals(modelo_loc)
@@ -272,64 +277,70 @@ plot(res)
 testDispersion(res)#  Test de sobredispersión
 testZeroInflation(res)#  Test de cero-inflación (exceso de ceros)
 
+
+
+
 summary(modelo_loc)
 car::Anova(modelo_loc) # Localidad 43.679  3  1.765e-09 ***
 #contraste
-tukey_loc <- pairs(emm_loc, adjust = "tukey")
-tukey_loc
-# Medias estimadas
 emm_loc <- emmeans(modelo_loc, ~ Localidad, type = "response") 
-emm_loc
+tukey_loc <- pairs(emm_loc, adjust = "response")
+tukey_loc
+plot(emm_loc, comparison = T)
 # Obtenemos los intervalos de confianza
 df_plot_loc <- as.data.frame(emm_loc)
 str(df_plot_loc)
+cld_loc <- multcomp::cld(emm_loc, Letters = letters, adjust = "sidak")
+df_plot_loc <- as.data.frame(cld_loc)
+df_plot_loc
 df_plot_loc$.group <- cld_loc$.group  # agregamos las letras
-
+df_plot_loc
 # Paleta de colores
 cols <- paletteer_d("ggthemes::excel_Depth")
 cols_mod <- cols
 cols_mod[2] <- cols[6]
 
 # Gráfico
-ggplot(df_plot_loc, aes(x = Localidad, y = response , fill = Localidad)) +
-  geom_col(color = "black") +
-  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+ggplot(df_plot_loc, aes(x = Localidad, y =  emmean)) +
+  geom_col(fill = cols_mod[1], color = "black") +
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
                 width = 0.2, size = 0.8) +
-  geom_text(aes(label = .group, y = response  + 2), size = 5) +  # ajusté +2 para que las letras queden dentro del eje
-  scale_fill_manual(values = cols_mod) +
-  scale_y_continuous(limits = c(0, 1)) +  # ajusta según rango real
+  geom_text(aes(label = .group, y =  emmean+0.05), size = 5) +  # ajusté +2 para que las letras queden dentro del eje
+  #scale_fill_manual(values = cols_mod) +
   labs(
     x = "Localidad",
-    y = "Semillas llenas (Semillas llenas, predicho)",
-    title = "semillas llenas por planta"
+    y = "Semillas (Semillas, predicho)",
+    title = "semillas por planta"
   ) +
   theme_minimal()
 
 #Por Línea
-emm_loc <- emmeans(modelo_loc, ~ Línea, type = "response") 
-emm_loc
+emm_lin <- emmeans(modelo_loc, ~ Línea, type = "tukey") 
+emm_lin
+tukey_loc <- pairs(emm_lin, adjust = "tukey")
+tukey_loc
 # Obtenemos los intervalos de confianza
-df_plot_loc <- as.data.frame(emm_loc)
-str(df_plot_loc)
-df_plot_loc$.group <- cld_loc$.group  # agregamos las letras
-
+df_plot_lin <- as.data.frame(emm_lin)
+str(df_plot_lin)
+cld_lin <- multcomp::cld(emm_lin, Letters = letters, adjust = "sidak")
+df_plot_lin$.group <- cld_lin$.group  # agregamos las letras
+df_plot_lin
 # Paleta de colores
 cols <- paletteer_d("ggthemes::excel_Depth")
 cols_mod <- cols
 cols_mod[2] <- cols[6]
 
 # Gráfico
-ggplot(df_plot_loc, aes(x = Línea, y = response , fill = Línea)) +
+ggplot(df_plot_lin, aes(x = Línea, y = emmean , fill = Línea)) +
   geom_col(color = "black") +
-  geom_errorbar(aes(ymin = asymp.LCL, ymax = asymp.UCL),
+  geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
                 width = 0.2, size = 0.8) +
-  geom_text(aes(label = .group, y = response  + 2), size = 5) +  # ajusté +2 para que las letras queden dentro del eje
-  scale_fill_manual(values = cols_mod) +
-  scale_y_continuous(limits = c(0, 1)) +  # ajusta según rango real
+  geom_text(aes(label = .group, y = emmean+0.03), size = 5) +  # ajusté +2 para que las letras queden dentro del eje
+  scale_fill_manual(values = cols_mod) +  
   labs(
     x = "Línea",
-    y =  "(Semillas llenas, predicho)",
-    title = "Medias estimadas de Semillas llenas por línea"
+    y =  "(Semillas, predicho)",
+    title = "Medias estimadas de Semillas por planta por línea"
   ) +
   theme_minimal()
 #### Interaccion genotipo ambiente #### 
