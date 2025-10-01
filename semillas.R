@@ -146,6 +146,7 @@ ggplot(df_lin, aes(x = Línea, y = exp(emmean), fill = Línea)) +
               #   ) +
               #   theme_minimal(base_size = 13)
 
+<<<<<<< Updated upstream
 ## RELATIVIZADO A CANTIDAD DE PLANTULAS ####
 REL_DMR_Linea <- lmer(DMR ~ Línea *Localidad + Año+(1|Bloque), data = relativos) ##Cambiar poner poison!
 summary(REL_DMR_Linea) 
@@ -167,6 +168,29 @@ ggplot(Rdf_plot, aes(x = Línea, y = emmean, fill = Línea)) + geom_col(color = 
     x = "Línea",
     y = "Densidad de inflorescencias relativizado a la cantidad de plantulas",
     title = "Medias estimadas de DMR" ) + theme_minimal(base_size = 13) 
+=======
+            # ## RELATIVIZADO A CANTIDAD DE PLANTULAS ####
+            # REL_DMR_Linea <- lmer(DMR ~ Línea + (1|Localidad) + (1|Año), data = relativos) ##Cambiar poner poison!
+            # summary(REL_DMR_Linea) 
+            # anova(REL_DMR_Linea)  #Si
+            # Remm_lineas <- emmeans(REL_DMR_Linea, ~ Línea) #contraste
+            # pairs(Remm_lineas, adjust = "tukey") #J7-L37 y J7-UF93 de pedo se mantienen las dif. la k14-L37 en este caso es MARGINAL en el caso anterior no
+            # #grafiquito
+            # 
+            # Remm_lineas <- emmeans(REL_DMR_Linea, ~ Línea) # Medias estimadas de DMR por Línea
+            # #Rcld_lineas <- cld(Remm_lineas, Letters = letters, adjust = "tukey")
+            # Rdf_plot <- as.data.frame(Remm_lineas)
+            # 
+            # ggplot(Rdf_plot, aes(x = Línea, y = emmean, fill = Línea)) + geom_col(color = "black") + geom_errorbar(aes(ymin = lower.CL, ymax = upper.CL),
+            #                                                                                                       width = 0.2, size = 0.8) +
+            #   #geom_text(aes(label = .group, y = emmean + 5),   # ajustá el +5 según escala de DMR
+            #   #          size = 5) +
+            #   scale_fill_manual(values = cols_mod) +
+            #   labs(
+            #     x = "Línea",
+            #     y = "Densidad de inflorescencias relativizado a la cantidad de plantulas",
+            #     title = "Medias estimadas de DMR" ) + theme_minimal(base_size = 13) 
+>>>>>>> Stashed changes
 
 
 
